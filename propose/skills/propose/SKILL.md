@@ -4,8 +4,8 @@ description: >
   Converts a rough idea into a full product proposal or feature spec through
   multi-agent research, critique, and synthesis. Auto-detects whether the user
   needs a lightweight feature proposal (codebase-aware, 4 agents, ~5-8 min) or
-  a full product proposal (8+ agents, deep research, ~15-25 min). Single entry
-  point: /propose "your idea". Triggers on: "propose", "product idea",
+  a full product proposal (pillar-based, 10+ agents, deep research, ~20-35 min).
+  Single entry point: /propose "your idea". Triggers on: "propose", "product idea",
   "feature proposal", "flesh out this idea", "turn this into a proposal",
   "spec from scratch", "explore this concept", "I have a rough idea for",
   "what if we built", "think through this feature".
@@ -16,7 +16,7 @@ description: >
 Converts fragment ideas into research-backed proposals through multi-agent
 expansion, critique, and synthesis. Two modes share one entry point:
 - **Feature mode** — lighter, codebase-aware, 4 agents, ~5-8 min
-- **Product mode** — full ideation, 8+ agents, deep research, ~15-25 min
+- **Product mode** — pillar-based with feedback loops, 10+ agents, ~20-35 min
 
 ## Path Resolution (read first)
 
@@ -135,48 +135,36 @@ Task → RedTeam Agent  (agents/ideate-redteam-agent.md)  → redteam-analysis.m
 
 RedTeam in Feature mode: focus on integration risks, security edge cases, most likely
 failure scenario for this specific feature in this codebase.
-All agents: WebSearch when confidence < 0.8. Cite sources.
+All agents: WebSearch when confidence < 0.8. Must cite what they searched for.
 
 ```bash
 bash "$PROPOSE_HOME/scripts/ideate-run.sh" end "$SLUG" 1
 ```
 
-### Feature Phase 2: Cross-Critique (2 parallel agents, ~30s)
+### Feature Phase 2: Cross-Critique + Cross-Validation (2 parallel agents, ~30s)
 
 ```bash
 bash "$PROPOSE_HOME/scripts/ideate-run.sh" begin "$SLUG" 2
 ```
 
-Spawn 2 critics in parallel. Each receives all 4 Phase 1 outputs.
+Spawn 2 critics in parallel. Each receives all 4 Phase 1 outputs TOGETHER.
+Key question for each: "Do these 4 perspectives produce a coherent feature, or do they contradict?"
 
 ```
-Technical Critic: challenges PM/UX assumptions — integration debt, arch conflicts, security gaps
+Technical Critic: challenges PM/UX assumptions — integration debt, arch conflicts, security gaps.
+  Also check: do Eng and PM agree on scope? Do UX and Eng agree on data needs?
   Severity: Blocking | Concerning | Minor — Output: critique-technical.md
 
-Product/UX Critic: challenges Eng/RedTeam assumptions — scope creep, friction, UX conflicts
+Product/UX Critic: challenges Eng/RedTeam assumptions — scope creep, friction, UX conflicts.
+  Also check: does RedTeam's risk model align with PM's success criteria?
   Severity: Blocking | Concerning | Minor — Output: critique-product-ux.md
 ```
 
+If either critic finds unresolved factual conflicts between agents, they may trigger
+1-2 targeted WebSearches to break the tie before finalizing their output.
+
 ```bash
 bash "$PROPOSE_HOME/scripts/ideate-run.sh" end "$SLUG" 2
-```
-
-### Feature Phase 2.5: Quick Fact-Check (1 agent, ~20s)
-
-```bash
-bash "$PROPOSE_HOME/scripts/ideate-run.sh" begin "$SLUG" 2.5
-```
-
-Read `agents/ideate-fact-checker.md`. Receives all Phase 1 + 2 outputs.
-
-```
-Task → Identify top 5 most impactful claims. Verify with WebSearch (min 5 searches).
-       Focus: quantitative estimates, tech recommendations, stated constraints.
-       Output: fact-check-report.md — VERIFIED | DISPUTED | UNVERIFIABLE per claim.
-```
-
-```bash
-bash "$PROPOSE_HOME/scripts/ideate-run.sh" end "$SLUG" 2.5
 ```
 
 ### Feature Phase 3: Synthesis + Variant Generation (1 agent, ~45s)
@@ -185,16 +173,13 @@ bash "$PROPOSE_HOME/scripts/ideate-run.sh" end "$SLUG" 2.5
 bash "$PROPOSE_HOME/scripts/ideate-run.sh" begin "$SLUG" 3
 ```
 
-Read `agents/ideate-synthesizer.md`. Synthesizer receives all Phase 1 + 2 + 2.5 outputs
-plus codebase context.
+Read `agents/ideate-synthesizer.md`. Receives all Phase 1 + 2 outputs + codebase context.
 
-Produces 2 variants (lean):
+Produces 2 variants:
 - **Recommended**: Best balance of quality and integration fit
 - **Speed**: Fastest path with acceptable debt, max reuse of existing code
 
-Applies all critique corrections. Applies all fact-check corrections.
-Cites research. Marks uncertain items NEEDS_CLARIFICATION.
-
+Applies all critique corrections. Cites research. Marks uncertain items NEEDS_CLARIFICATION.
 Output: `synthesis.md` with embedded variant sections.
 
 ```bash
@@ -208,7 +193,7 @@ bash "$PROPOSE_HOME/scripts/ideate-run.sh" begin "$SLUG" 4
 bash "$PROPOSE_HOME/scripts/ideate-run.sh" scaffold "$SLUG"
 ```
 
-Feature output structure (lighter — no personas, no what-if, no full research dir):
+Feature output structure:
 
 ```
 proposal-[slug]/
@@ -244,19 +229,26 @@ bash "$PROPOSE_HOME/scripts/ideate-run.sh" status "$SLUG"
 
 ---
 
-## Product Mode (Phases 0.5 → 5)
+## Product Mode (Phases 0.5 → 8)
 
-For new products and full ideation from scratch. Heavier, deeper research.
+For new products from scratch. Architecture is **pillar-based with feedback loops** —
+not a linear assembly line. Research is continuous: Phase 1 establishes broad landscape,
+Phase 3 pillar agents research their own domain deeply, Phase 5 adversaries verify claims,
+Phase 6 synthesizer fills remaining gaps. Every agent has WebSearch.
 
-### Product Phase 0.5: Deep Research Grounding (3 parallel agents, ~120s)
+Proposals validate against each other: Phase 4 cross-validates all pillars to catch
+contradictions ("Auth assumes JWT, Dashboard assumes sessions"). Feedback flows backward:
+cross-validation conflicts must be resolved by the synthesizer; adversarial BLOCKING items
+must be addressed or escalated.
+
+### Product Phase 0.5: Landscape Research (3 parallel agents, ~90s)
 
 ```bash
 bash "$PROPOSE_HOME/scripts/ideate-run.sh" begin "$SLUG" 0.5
 ```
 
-No agent should think in a vacuum. Research grounds all Phase 1 expansion in real data.
-
-Read `agents/ideate-research-agent.md` AND `references/research-protocol.md` before spawning.
+Broad research grounds all downstream work. Read `agents/ideate-research-agent.md`
+AND `references/research-protocol.md` before spawning.
 
 ```
 Agent A: Market & Competitive Intelligence
@@ -272,184 +264,172 @@ Agent C: UX Patterns & Case Studies
   Minimum 15 searches, fetch 3+ full articles — Output: research-ux.md
 ```
 
-Merge outputs into `research-dossier.md` (template in `references/research-protocol.md`).
-This dossier is passed to ALL subsequent agents.
-
-Research quality gate (30+ sources required):
+Merge outputs into `landscape/DOSSIER.md`. This dossier is passed as context to ALL
+subsequent phases. Research quality gate:
 - [ ] >= 45 total searches (15 per agent)
 - [ ] >= 3 competitors with real pricing/feature data
 - [ ] >= 2 case studies with quantitative results
 - [ ] >= 30 unique real URLs in source registry
-- [ ] Research gaps documented
 
 ```bash
 bash "$PROPOSE_HOME/scripts/ideate-run.sh" research-stats "$SLUG" [searches] [sources] 0
 bash "$PROPOSE_HOME/scripts/ideate-run.sh" end "$SLUG" 0.5
 ```
 
-### Product Phase 1: Divergent Expansion (5 parallel agents, ~60s)
+### Product Phase 1: Pillar Decomposition (main agent, ~15s)
 
 ```bash
 bash "$PROPOSE_HOME/scripts/ideate-run.sh" begin "$SLUG" 1
 ```
 
-Each agent receives: idea brief + research dossier + role instructions.
-If CWD has a codebase, include codebase context for Eng Agent.
-Agents must NOT see each other's outputs (prevents anchoring bias).
-All agents follow Confidence Threshold Rule. WebSearch when confidence < 0.8.
+Main agent reads idea brief + landscape dossier and decomposes the product into 3-6
+feature pillars. Each pillar is a major capability area (e.g., Auth, Dashboard, Payments,
+Notifications, Admin, API).
 
-```
-Task → PM Agent       (agents/ideate-pm-agent.md)       → pm-analysis.md
-Task → UX Agent       (agents/ideate-ux-agent.md)       → ux-analysis.md
-Task → Eng Agent      (agents/ideate-eng-agent.md)      → eng-analysis.md  [flag Novel complexity items]
-Task → Biz Agent      (agents/ideate-biz-agent.md)      → biz-analysis.md
-Task → RedTeam Agent  (agents/ideate-redteam-agent.md)  → redteam-analysis.md
-```
+Output: `pillars/INDEX.md` containing:
+- Pillar names and one-line descriptions
+- Known dependencies between pillars (e.g., "Payments depends on Auth")
+- Suggested shipping sequence (earliest pillar that others depend on)
 
-Score each proposed branch on 4 dimensions (1-5): Feasibility (0.30), Impact (0.30),
-Novelty (0.20), Alignment (0.20). Keep top 5 branches (beam width = 5).
-Store all in `.claude/ideation/[slug]/branches/`.
+This becomes the work contract for Phase 3.
 
 ```bash
 bash "$PROPOSE_HOME/scripts/ideate-run.sh" end "$SLUG" 1
 ```
 
-### Product Phase 1.5: Validation Interviews (2 parallel agents, ~45s)
-
-```bash
-bash "$PROPOSE_HOME/scripts/ideate-run.sh" begin "$SLUG" 1.5
-```
-
-Simulate user interviews to surface friction before critique. Each agent receives the
-top-scoring branch + personas from idea-brief.md.
-
-```
-# Agent A: Primary Persona Interview
-Task → Simulate the primary target user walking through the proposed product.
-       Identify: onboarding friction, missing features, confusing flows, value gaps.
-       Output: validation-primary.md
-
-# Agent B: Edge-Case Persona Interview
-Task → Simulate one of: low-tech user, power user, or adversarial user.
-       Choose whichever reveals the most risk for this specific idea.
-       Identify: accessibility gaps, abuse vectors, unmet power-user needs.
-       Output: validation-edge.md
-```
-
-```bash
-bash "$PROPOSE_HOME/scripts/ideate-run.sh" end "$SLUG" 1.5
-```
-
-### Product Phase 2: Structured Critique (3 parallel agents, ~45s)
+### Product Phase 2: Per-Pillar Deep Dive (loop per pillar, ~90s)
 
 ```bash
 bash "$PROPOSE_HOME/scripts/ideate-run.sh" begin "$SLUG" 2
 ```
 
-Each critique agent receives all Phase 1 + 1.5 outputs.
+For EACH pillar identified in Phase 1, spawn a pillar team of 3 parallel tasks.
+All pillars run in parallel (or as Agent Team teammates — see Experimental section).
+The main agent calls begin/end around the WHOLE phase, not per pillar.
+
+**Per-pillar team** (receives: idea brief + landscape dossier + pillar name + other pillar names):
 
 ```
-# Critique Agent A: PM+UX lens → challenges Eng+Biz assumptions
-# Critique Agent B: Eng+Biz lens → challenges PM+UX assumptions
-# Devil's Advocate  (agents/ideate-devils-advocate.md) → finds strongest counter to any consensus
+Task → Pillar Researcher  (agents/ideate-research-agent.md, scoped to pillar domain)
+  Builds on landscape dossier. Goes deeper into this specific capability area.
+  Minimum 5 searches specific to this pillar. Output: pillar-[name]-research.md
+
+Task → Pillar PM+UX       (agents/ideate-pm-agent.md + ideate-ux-agent.md combined prompt)
+  User stories, acceptance criteria, UX flows, and success metrics for this pillar.
+  Must note: "does this conflict with other pillars I know about?"
+  Output: pillar-[name]-pm-ux.md
+
+Task → Pillar Eng         (agents/ideate-eng-agent.md, scoped to pillar)
+  Architecture, data model, APIs, dependencies, and complexity for this pillar.
+  Must flag any Novel complexity items. Must note cross-pillar technical dependencies.
+  Output: pillar-[name]-eng.md
 ```
 
-Each critique entry: `## Challenge`, Evidence Against, Severity (Blocking|Concerning|Minor),
-Confidence (0.0-1.0), Alternative.
+Merge three per-pillar files into a single `pillars/pillar-[name].md` per pillar.
 
 ```bash
 bash "$PROPOSE_HOME/scripts/ideate-run.sh" end "$SLUG" 2
 ```
 
-### Product Phase 2.5: Fact-Check & Research Deepening (1-2 agents, ~60s)
-
-```bash
-bash "$PROPOSE_HOME/scripts/ideate-run.sh" begin "$SLUG" 2.5
-```
-
-Phase 0.5 research is broad. This phase verifies specific claims from Phases 1 and 2:
-quantitative projections, technology recommendations, competitor pricing, ROI estimates.
-
-```
-# Fact-Checker (agents/ideate-fact-checker.md)
-Task → Receives: all Phase 1 + Phase 2 files + research dossier
-       Minimum 15 verification searches. Focus: quantitative, disputed, tech claims.
-       Output: fact-check-report.md
-```
-
-If domain touches healthcare, finance, or legal — also spawn:
-```
-Task → Research [domain] compliance/certifications. Min 5 searches. Output: domain-research.md
-```
-
-Fact-check quality gate:
-- [ ] >= 10 claims verified
-- [ ] All quantitative claims in top recommendation are sourced
-- [ ] Disputed claims resolved with external evidence
-- [ ] Unverifiable claims explicitly listed
-
-```bash
-bash "$PROPOSE_HOME/scripts/ideate-run.sh" research-stats "$SLUG" [searches] [sources] [claims_verified]
-bash "$PROPOSE_HOME/scripts/ideate-run.sh" end "$SLUG" 2.5
-```
-
-### Product Phase 3: Synthesis (1 agent, best model, ~45s)
+### Product Phase 3: Cross-Validation (2 parallel agents, ~45s)
 
 ```bash
 bash "$PROPOSE_HOME/scripts/ideate-run.sh" begin "$SLUG" 3
 ```
 
-Read `agents/ideate-synthesizer.md`. Synthesizer receives ALL Phase 1 + 1.5 + 2 + 2.5 outputs.
+Both agents receive ALL pillar outputs together. They validate the pillars as a
+system, not in isolation.
 
-Synthesizer must:
-1. Identify areas of agreement across all agents
-2. Resolve tensions using confidence-weighted synthesis (GoT-style merging)
-3. Apply ALL corrections from fact-check report
-4. Incorporate friction points from validation interviews into persona section
-5. Cite research using [N] notation for all key claims
-6. Mark uncertain items NEEDS_CLARIFICATION
-7. Preserve minority opinions in a "Dissenting Views" section
-8. Run targeted WebSearch/WebFetch for remaining gaps before finalizing
+```
+Agent A: Coherence Validator
+  - Do pillars fit together as one product with consistent UX flow?
+  - Data model consistency: do pillars share or conflict on entity definitions?
+  - Shared dependencies / conflicting assumptions (e.g., auth strategy, state management)
+  - Output: validation/cross-validation.md
+
+Agent B: Integration Architect
+  - Technical integration points between pillars (shared services, event flows, API contracts)
+  - Sequencing: which pillar must ship before others can function?
+  - Build a dependency graph with rationale
+  - Output: validation/cross-validation.md (append integration section)
+```
+
+After both agents complete, main agent merges outputs and produces:
+`validation/conflict-report.md` — lists every contradiction found, severity
+(Blocking | Concerning | Minor), and which pillars are involved. The synthesizer
+in Phase 5 MUST resolve each item. Critical conflicts may be flagged for user decision.
 
 ```bash
 bash "$PROPOSE_HOME/scripts/ideate-run.sh" end "$SLUG" 3
 ```
 
-### Product Phase 3.5: Feasibility Spike (1 agent, conditional, ~45s)
-
-```bash
-bash "$PROPOSE_HOME/scripts/ideate-run.sh" begin "$SLUG" 3.5
-```
-
-**Condition**: Only run if Eng Agent in Phase 1 flagged any items as "Novel" complexity.
-If no Novel items → skip, log "Phase 3.5 skipped: no Novel complexity items."
-
-```
-# Feasibility Spike Agent
-Task → Receives: eng-analysis.md (Novel items list) + synthesis.md
-       For EACH Novel complexity item: minimum 3 searches.
-       Find real-world implementations, benchmarks, or post-mortems.
-       Output: feasibility-spike.md
-       Format per item:
-         ## [Technology/Pattern Name]
-         - Status: GO | NO-GO | CONDITIONAL
-         - Evidence: [links + summary]
-         - Risk if wrong: [impact on overall proposal]
-         - Mitigation: [fallback approach]
-```
-
-```bash
-bash "$PROPOSE_HOME/scripts/ideate-run.sh" end "$SLUG" 3.5
-```
-
-### Product Phase 4: Variant Generation (3 parallel agents, ~45s)
+### Product Phase 4: Adversarial Review (2 parallel agents, ~45s)
 
 ```bash
 bash "$PROPOSE_HOME/scripts/ideate-run.sh" begin "$SLUG" 4
 ```
 
-Each variant agent receives the synthesized core PRD with a distinct optimization target.
-Include feasibility-spike.md if Phase 3.5 ran.
+Both agents see ALL pillar outputs + cross-validation results. They evaluate the
+whole product, not individual pillars. Both have WebSearch — they verify claims,
+find real failure cases, and search for post-mortems.
+
+```
+Agent A: Red Team  (agents/ideate-redteam-agent.md)
+  Attacks the product: abuse vectors, competitive responses, regulatory traps,
+  economic failure modes, security gaps across pillar boundaries.
+  Severity per finding: Blocking | Concerning | Minor
+  Output: (adversarial-review.md)
+
+Agent B: Devil's Advocate  (agents/ideate-devils-advocate.md)
+  Challenges the consensus assumptions: "what if the core premise is wrong?"
+  Focus on the strongest possible counter-argument to the whole product.
+  Severity per finding: Blocking | Concerning | Minor
+  Output: (appended to adversarial-review.md)
+```
+
+Merge into `validation/adversarial-review.md`. Any BLOCKING items must be
+addressed by the synthesizer or escalated to user.
+
+```bash
+bash "$PROPOSE_HOME/scripts/ideate-run.sh" end "$SLUG" 4
+```
+
+### Product Phase 5: Synthesis (1 agent, best model, ~60s)
+
+```bash
+bash "$PROPOSE_HOME/scripts/ideate-run.sh" begin "$SLUG" 5
+```
+
+Read `agents/ideate-synthesizer.md`. Synthesizer receives EVERYTHING:
+- Landscape dossier
+- All pillar analyses
+- Cross-validation conflict report
+- Adversarial review
+
+Synthesizer MUST:
+1. Resolve every item in conflict-report.md — document resolution rationale
+2. Address every BLOCKING item from adversarial-review.md
+3. Produce coherent product recommendation organized by pillar
+4. Run additional WebSearch to fill gaps before finalizing
+5. Mark unresolvable items `NEEDS_CLARIFICATION` with a specific question for the user
+6. Preserve dissenting views in a "Dissenting Views" section
+7. Cite research using [N] notation for all quantitative claims
+
+Output: `synthesis.md` (input to Phase 6 variant agents and final PRD)
+
+```bash
+bash "$PROPOSE_HOME/scripts/ideate-run.sh" end "$SLUG" 5
+```
+
+### Product Phase 6: Variant Generation (3 parallel agents, ~45s)
+
+```bash
+bash "$PROPOSE_HOME/scripts/ideate-run.sh" begin "$SLUG" 6
+```
+
+Each variant agent receives synthesis + ALL pillar analyses. Each proposes how
+to sequence, cut, or expand pillars for their optimization target. Variants must
+differ on fundamental tradeoffs, not surface details.
 
 ```
 Task → Speed Variant      (agents/ideate-variant-speed.md)     → approach-speed.md
@@ -457,16 +437,17 @@ Task → Excellence Variant (agents/ideate-variant-excellence.md) → approach-e
 Task → Lean Variant       (agents/ideate-variant-lean.md)       → approach-lean.md
 ```
 
-Variants must differ on fundamental tradeoffs, not surface details.
+Each variant must include: pillar sequencing for that strategy, what gets cut/deferred,
+and the core tradeoff rationale.
 
 ```bash
-bash "$PROPOSE_HOME/scripts/ideate-run.sh" end "$SLUG" 4
+bash "$PROPOSE_HOME/scripts/ideate-run.sh" end "$SLUG" 6
 ```
 
-### Product Phase 5: Document Assembly (main agent, ~30s)
+### Product Phase 7: Document Assembly (main agent, ~30s)
 
 ```bash
-bash "$PROPOSE_HOME/scripts/ideate-run.sh" begin "$SLUG" 5
+bash "$PROPOSE_HOME/scripts/ideate-run.sh" begin "$SLUG" 7
 bash "$PROPOSE_HOME/scripts/ideate-run.sh" scaffold "$SLUG"
 ```
 
@@ -474,66 +455,64 @@ Full output structure:
 
 ```
 proposal-[slug]/
-├── INDEX.md                      ← Navigation hub with role-based entry points
+├── INDEX.md                      ← navigation hub, links all pillars + validation files
 ├── SUMMARY.md                    ← 1-page executive summary
-├── COMPARISON.md                 ← Weighted scoring matrix
+├── COMPARISON.md                 ← weighted scoring matrix across variants
 ├── core/
-│   ├── PRD.md
+│   ├── PRD.md                    ← organized by pillar sections
 │   ├── OUTCOME.md
 │   └── ASSUMPTIONS.md
-├── research/
+├── landscape/                    ← Phase 0.5 research
 │   ├── INDEX.md
 │   ├── DOSSIER.md
-│   ├── FACT-CHECK.md
 │   ├── COMPETITIVE-LANDSCAPE.md
 │   ├── BENCHMARKS.md
-│   └── SOURCES.md
-├── personas/
-│   ├── INDEX.md
-│   ├── persona-[name].md
-│   ├── validation-primary.md
-│   ├── validation-edge.md
-│   └── PERSONA-MATRIX.md
+│   └── SOURCES.md                ← master source registry (all phases)
+├── pillars/                      ← Phase 2 per-pillar analyses
+│   ├── INDEX.md                  ← pillar overview + dependency map
+│   ├── pillar-[name-1].md
+│   ├── pillar-[name-2].md
+│   └── pillar-[name-N].md
+├── validation/                   ← Phase 3 + 4 outputs
+│   ├── cross-validation.md
+│   ├── conflict-report.md        ← items resolved in synthesis
+│   └── adversarial-review.md
 ├── approaches/
 │   ├── INDEX.md
 │   ├── approach-speed.md
 │   ├── approach-excellence.md
 │   ├── approach-lean.md
 │   └── TRADEOFF-MATRIX.md
+├── technical/
+│   ├── architecture.md
+│   ├── data-model.md
+│   ├── integration-points.md     ← from cross-validation
+│   └── pillar-sequencing.md      ← which pillars ship first
 ├── edge-cases/
-│   ├── INDEX.md
 │   ├── failure-modes.md
 │   ├── scale-scenarios.md
 │   └── security.md
 ├── what-if/
-│   ├── INDEX.md
 │   ├── budget-constrained.md
 │   ├── timeline-compressed.md
 │   └── scope-expanded.md
-├── technical/
-│   ├── architecture.md
-│   ├── data-model.md
-│   ├── integration-points.md
-│   ├── migration.md
-│   └── feasibility-spike.md      ← included if Phase 3.5 ran
 ├── decisions/
 │   ├── INDEX.md
-│   └── ADR-001-[topic].md
+│   └── ADR-001-*.md              ← includes conflict resolutions from Phase 5
 └── meta/
     ├── OPEN-QUESTIONS.md
     ├── GLOSSARY.md
     └── GENERATION-LOG.md
 ```
 
-INDEX.md role-based entry points: Executive → SUMMARY.md (2 min), PM → COMPARISON.md (5 min),
-Engineer → approaches/approach-excellence.md (10 min), Skeptic → edge-cases/INDEX.md (5 min),
-Designer → personas/INDEX.md (5 min).
+INDEX.md role-based entry points: Executive → SUMMARY.md (2 min), PM → COMPARISON.md
+(5 min), Engineer → technical/pillar-sequencing.md (10 min), Skeptic →
+validation/adversarial-review.md (5 min), Designer → pillars/INDEX.md (5 min).
 
-TRADEOFF-MATRIX.md must include sensitivity analysis. Read `templates/` for consistent
-formatting. Every file: breadcrumb header, inline cross-refs, "where next" footer.
+Every file: breadcrumb header + inline cross-refs + "where next" footer.
 
 ```bash
-bash "$PROPOSE_HOME/scripts/ideate-run.sh" end "$SLUG" 5
+bash "$PROPOSE_HOME/scripts/ideate-run.sh" end "$SLUG" 7
 bash "$PROPOSE_HOME/scripts/ideate-run.sh" quality "$SLUG"
 bash "$PROPOSE_HOME/scripts/ideate-run.sh" status "$SLUG"
 ```
@@ -554,35 +533,30 @@ Returns exit 1 on any critical failure.
 - [ ] >= 1 ADR decision record
 - [ ] integration-points.md references actual existing code artifacts
 - [ ] SOURCES.md has >= 5 unique real URLs
-- [ ] fact-check-report.md covers >= 5 claims
 - [ ] No UNVERIFIED claims in SUMMARY.md or PRD.md
 
-### Product Mode Checks (full)
+### Product Mode Checks
 
 Structural:
-- [ ] Every file has breadcrumb navigation
-- [ ] INDEX.md links to all files
-- [ ] COMPARISON.md has scores for all approaches
+- [ ] Every pillar has a dedicated `pillars/pillar-[name].md`
+- [ ] `validation/cross-validation.md` exists and covers all pillar pairs
+- [ ] Every item in `validation/conflict-report.md` is RESOLVED or NEEDS_CLARIFICATION
+- [ ] `validation/adversarial-review.md` has no unaddressed BLOCKING items
+- [ ] `technical/pillar-sequencing.md` exists with dependency rationale
+- [ ] `pillars/INDEX.md` links to all pillar files
+- [ ] INDEX.md links to all pillars and validation files
+- [ ] COMPARISON.md has scores for all variants
 - [ ] OPEN-QUESTIONS.md has >= 3 items
-- [ ] failure-modes.md exists and is non-trivial
-- [ ] >= 2 ADR decision records
-- [ ] No file references a path that doesn't exist
-- [ ] validation-primary.md and validation-edge.md exist in personas/
+- [ ] >= 2 ADR records (at least one must be a conflict resolution)
 
 Research:
-- [ ] SOURCES.md has >= 30 unique real URLs
+- [ ] SOURCES.md has >= 30 unique real URLs (cumulative across all phases)
+- [ ] Every pillar file cites >= 3 sources specific to that pillar domain
 - [ ] DOSSIER.md covers market, competitors, UX patterns, and technology
-- [ ] FACT-CHECK.md has verified >= 10 claims with minimum 15 searches
 - [ ] Every approach file cites >= 3 external sources
 - [ ] PRD.md has inline [N] citations for all quantitative claims
 - [ ] COMPETITIVE-LANDSCAPE.md has real competitor data
-- [ ] BENCHMARKS.md has >= 3 benchmarks with sources
-- [ ] No UNVERIFIED in executive summary
-- [ ] All "Corrections Required" from fact-check are applied
-
-Feasibility:
-- [ ] If Phase 3.5 ran: feasibility-spike.md exists in technical/ and all Novel items have GO/NO-GO verdict
-- [ ] If Phase 3.5 skipped: GENERATION-LOG.md documents the skip reason
+- [ ] No UNVERIFIED claims in executive summary
 
 Citation format (all modes):
 - [ ] Files with research claims have a Sources footer section
@@ -596,26 +570,24 @@ Citation format (all modes):
 
 | Agent | File | Feature | Product |
 |-------|------|---------|---------|
-| Research Agent | `ideate-research-agent.md` | Phase 0.5 (1x) | Phase 0.5 (3x) |
-| PM Agent | `ideate-pm-agent.md` | Phase 1 | Phase 1 |
-| UX Agent | `ideate-ux-agent.md` | Phase 1 | Phase 1 |
-| Eng Agent | `ideate-eng-agent.md` | Phase 1 | Phase 1 |
-| RedTeam Agent | `ideate-redteam-agent.md` | Phase 1 | Phase 1 |
-| Biz Agent | `ideate-biz-agent.md` | — | Phase 1 |
-| Validation Interview A | _(inline prompt)_ | — | Phase 1.5 |
-| Validation Interview B | _(inline prompt)_ | — | Phase 1.5 |
+| Research Agent | `ideate-research-agent.md` | Phase 0.5 (1x) | Phase 0.5 (3x), Phase 2 (1x per pillar) |
+| PM Agent | `ideate-pm-agent.md` | Phase 1 | Phase 2 (1x per pillar, combined) |
+| UX Agent | `ideate-ux-agent.md` | Phase 1 | Phase 2 (1x per pillar, combined) |
+| Eng Agent | `ideate-eng-agent.md` | Phase 1 | Phase 2 (1x per pillar) |
+| RedTeam Agent | `ideate-redteam-agent.md` | Phase 1 | Phase 4 |
+| Coherence Validator | _(inline prompt)_ | — | Phase 3 |
+| Integration Architect | _(inline prompt)_ | — | Phase 3 |
+| Devil's Advocate | `ideate-devils-advocate.md` | — | Phase 4 |
+| Synthesizer | `ideate-synthesizer.md` | Phase 3 | Phase 5 |
 | Technical Critic | _(inline prompt)_ | Phase 2 | — |
 | Product/UX Critic | _(inline prompt)_ | Phase 2 | — |
-| Critique A/B | _(inline prompts)_ | — | Phase 2 (2x) |
-| Devil's Advocate | `ideate-devils-advocate.md` | — | Phase 2 |
-| Fact-Checker | `ideate-fact-checker.md` | Phase 2.5 | Phase 2.5 |
-| Synthesizer | `ideate-synthesizer.md` | Phase 3 | Phase 3 |
-| Feasibility Spike | _(inline prompt)_ | — | Phase 3.5 (cond.) |
-| Speed Variant | `ideate-variant-speed.md` | Phase 3 (inline) | Phase 4 |
-| Excellence Variant | `ideate-variant-excellence.md` | — | Phase 4 |
-| Lean Variant | `ideate-variant-lean.md` | — | Phase 4 |
+| Speed Variant | `ideate-variant-speed.md` | Phase 3 (inline) | Phase 6 |
+| Excellence Variant | `ideate-variant-excellence.md` | — | Phase 6 |
+| Lean Variant | `ideate-variant-lean.md` | — | Phase 6 |
 
-Research-primary agents (Research Agent, Fact-Checker): 15+ searches. Others: 2-5 per Confidence Threshold Rule.
+Research-primary agents (Research Agent in Phase 0.5): 15+ searches.
+Per-pillar researchers (Phase 2): 5+ searches scoped to pillar domain.
+Others: 2-5 per Confidence Threshold Rule (WebSearch when confidence < 0.8).
 
 ---
 
@@ -623,10 +595,12 @@ Research-primary agents (Research Agent, Fact-Checker): 15+ searches. Others: 2-
 
 - Subagents receive only the context they need — embed all necessary info in Task prompt
 - Main agent maintains running status summary between phases
-- Auto-compact: preserve idea brief, scoring results, file list, current phase
-- Model budget: Sonnet-class for Phase 1/1.5/2/4; best available for Phase 3 synthesis
+- Auto-compact: preserve idea brief, pillar list, conflict report items, current phase
+- Model budget: Sonnet-class for Phase 0.5/2/3/4/6; best available for Phase 5 synthesis
 - Mandatory context for ALL agents: `references/research-protocol.md`
-- Phase 1 agents also read: `directives/creative-directives.md`, `references/frameworks.md`
+- Phase 2 pillar agents also read: `directives/creative-directives.md`, `references/frameworks.md`
+- Phase 2 per-pillar agents receive the landscape dossier but are expected to go deeper
+  into their specific area — they are NOT limited to the dossier's findings
 
 ---
 
@@ -647,9 +621,9 @@ Else:
 ### When Teams Are Used
 
 Product mode only, on the three heaviest parallel phases:
-- Phase 0.5 — 3 research teammates (true parallel)
-- Phase 1 — 5 expansion teammates (true parallel)
-- Phase 2 — 3 critique teammates (can cross-reference via SendMessage)
+- Phase 0.5 — 3 landscape researcher teammates (true parallel)
+- Phase 2 — each pillar is a teammate with isolated file ownership (true parallel)
+- Phase 4 — Red Team + Devil's Advocate as teammates (can message each other)
 
 ### Team Workflow
 
@@ -669,28 +643,27 @@ Product mode only, on the three heaviest parallel phases:
 
 Each teammate owns exactly one output file. Declare in task description:
 ```
-File ownership: .claude/ideation/{slug}/research-market.md
+File ownership: .claude/ideation/{slug}/pillar-[name].md
 ```
+
+In Phase 2, each pillar teammate owns its three sub-files and merges them itself:
+```
+File ownership: .claude/ideation/{slug}/pillar-[name]-research.md,
+                .claude/ideation/{slug}/pillar-[name]-pm-ux.md,
+                .claude/ideation/{slug}/pillar-[name]-eng.md,
+                .claude/ideation/{slug}/pillars/pillar-[name].md
+```
+
 No two teammates may own the same file. Main agent assembles final outputs only.
 
-### Phase 2 Critique with Cross-Messaging
+### Phase 4 Adversarial Cross-Messaging
 
 ```
-Critique A → reads Phase 1 outputs → drafts critique
-Critique A → SendMessage(to: "critique-b", "Flagging X as Blocking — concur?")
-Critique B → may adjust severity based on peer confirmation
+Red Team → reads all pillar outputs → drafts adversarial findings
+Red Team → SendMessage(to: "devils-advocate", "Flagging [X] as Blocking — concur?")
+Devil's Advocate → may adjust severity based on peer confirmation
 Both → write output files → TaskUpdate(completed)
 ```
-
-Devil's Advocate waits for Critique A and B to complete, then challenges the
-emerging consensus rather than a phantom one.
-
-### Benefits Over Standard Subagents
-
-- True parallelism (not simulated)
-- OS-level file isolation per teammate
-- Critique agents can cross-confirm severity via SendMessage
-- ~10s overhead per team
 
 ### Fallback Guarantee
 
