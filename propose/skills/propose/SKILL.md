@@ -95,6 +95,26 @@ calls, and zero unresolved conflicts in the output.
 - **OPEN-QUESTIONS.md** contains ONLY items requiring the user's business/strategic
   judgment (budget, go-to-market timing, team hiring) — never technical or product
   decisions that agents can resolve themselves.
+- **Every open question MUST include 1-3 proposed solutions** with trade-off
+  analysis so the user can pick one immediately or run `/propose` again referencing
+  that section to explore a solution in depth. Format per question:
+
+  ```markdown
+  ### Q1: [Question]
+  **Context**: [Why agents couldn't decide — requires business/strategic input]
+  **Impact**: [What depends on this answer]
+
+  **Proposed Solution A**: [Concrete option]
+  - Pro: [benefit]  Con: [tradeoff]
+  - Explore deeper: `/propose "Q1 Solution A: [brief description]"`
+
+  **Proposed Solution B**: [Concrete option]
+  - Pro: [benefit]  Con: [tradeoff]
+  - Explore deeper: `/propose "Q1 Solution B: [brief description]"`
+
+  **Recommended default**: [Which solution agents would pick if forced, and why]
+  ```
+
 - With **Agent Teams**: resolution is real-time. Conflicting teammates message each
   other via SendMessage to debate, the lead agent reads both positions and decides.
 
@@ -465,8 +485,10 @@ Synthesizer MUST:
 
 **No NEEDS_CLARIFICATION allowed.** If the synthesizer encounters a genuine
 business-only decision (budget range, hiring timeline, go-to-market geography),
-write it to OPEN-QUESTIONS.md — but technical and product decisions are resolved
-by the synthesizer with WebSearch + reasoning.
+write it to OPEN-QUESTIONS.md with 1-3 proposed solutions, trade-off analysis,
+a recommended default, and a `/propose` command per solution so the user can
+explore any option deeper. Technical and product decisions are resolved by the
+synthesizer with WebSearch + reasoning — never deferred.
 
 Output: `synthesis.md` (input to Phase 6 variant agents and final PRD)
 
@@ -595,7 +617,9 @@ Structural:
 - [ ] `validation/cross-validation.md` exists and covers all pillar pairs
 - [ ] Every item in `validation/conflict-report.md` is RESOLVED with an ADR reference
 - [ ] Every BLOCKING item in `validation/adversarial-review.md` is MITIGATED with an ADR
-- [ ] No NEEDS_CLARIFICATION for technical/product decisions — only business-only questions in OPEN-QUESTIONS.md
+- [ ] No NEEDS_CLARIFICATION for technical/product decisions
+- [ ] Every OPEN-QUESTIONS.md item has 1-3 proposed solutions with trade-offs and `/propose` deep-dive commands
+- [ ] Every open question has a "Recommended default" pick
 - [ ] `validation/adversarial-review.md` has no unaddressed BLOCKING items
 - [ ] `technical/pillar-sequencing.md` exists with dependency rationale
 - [ ] `pillars/INDEX.md` links to all pillar files
