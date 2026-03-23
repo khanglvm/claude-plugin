@@ -81,10 +81,22 @@ Lock answers into `idea-brief.md`. Use Propose→Refine→Lock: propose concrete
 follow threads not checklists, switch to freeform if user says "let me explain."
 
 **CRITICAL: Phase 0 is the ONLY interactive phase.** After `end "$SLUG" 0`, the
-entire pipeline runs autonomously with zero user prompts. Conflicts, uncertainties,
-and unresolvable items are documented in the output files (OPEN-QUESTIONS.md,
-conflict-report.md, NEEDS_CLARIFICATION sections) — never surfaced as blocking
-gates or AskUserQuestion calls. The user reviews everything post-assembly.
+entire pipeline runs autonomously with zero user prompts, zero AskUserQuestion
+calls, and zero unresolved conflicts in the output.
+
+**Resolution Protocol — no item reaches the user unresolved:**
+- When cross-validation finds conflicts → spawn a **Resolver Agent** to research
+  both sides, make a decision, and record it as an ADR. The orchestrator (main
+  agent) acts as product lead and arbitrates if the resolver is split.
+- When adversarial review finds BLOCKING items → spawn a Resolver to investigate,
+  propose a mitigation, and commit the decision.
+- When synthesis encounters uncertainty → synthesizer runs WebSearch, makes a
+  best-judgment call, and documents the rationale. No `NEEDS_CLARIFICATION`.
+- **OPEN-QUESTIONS.md** contains ONLY items requiring the user's business/strategic
+  judgment (budget, go-to-market timing, team hiring) — never technical or product
+  decisions that agents can resolve themselves.
+- With **Agent Teams**: resolution is real-time. Conflicting teammates message each
+  other via SendMessage to debate, the lead agent reads both positions and decides.
 
 ```bash
 bash "$PROPOSE_HOME/scripts/ideate-run.sh" end "$SLUG" 0
@@ -185,7 +197,8 @@ Produces 2 variants:
 - **Recommended**: Best balance of quality and integration fit
 - **Speed**: Fastest path with acceptable debt, max reuse of existing code
 
-Applies all critique corrections. Cites research. Marks uncertain items NEEDS_CLARIFICATION.
+Applies all critique corrections. Cites research. Makes best-judgment calls on
+uncertainties — never defers. Documents rationale for each decision.
 Output: `synthesis.md` with embedded variant sections.
 
 ```bash
@@ -360,11 +373,23 @@ Agent B: Integration Architect
   - Output: validation/cross-validation.md (append integration section)
 ```
 
-After both agents complete, main agent merges outputs and produces:
-`validation/conflict-report.md` — lists every contradiction found, severity
-(Blocking | Concerning | Minor), and which pillars are involved. The synthesizer
-in Phase 5 MUST resolve each item or document it as NEEDS_CLARIFICATION in
-OPEN-QUESTIONS.md. Never pause the pipeline — the user reviews after assembly.
+After both agents complete, main agent merges outputs into
+`validation/conflict-report.md` — every contradiction, severity, and pillars involved.
+
+**Conflict Resolution Loop (runs before Phase 3 ends):**
+For each Blocking or Concerning conflict, spawn a **Resolver Agent**:
+```
+Task → Resolver: "Conflict: [Pillar A assumes X, Pillar B assumes Y].
+       Research both approaches. Make a decision. Justify with evidence.
+       You have WebSearch — use it. Output a decision block:
+       DECISION: [chosen approach]
+       RATIONALE: [why, with citations]
+       IMPACT: [what changes in which pillar]
+       Record as ADR-NNN in decisions/"
+```
+Resolvers run in parallel (one per Blocking/Concerning conflict).
+After all resolvers complete, the orchestrator updates conflict-report.md
+with RESOLVED status and ADR references. No item stays open.
 
 ```bash
 bash "$PROPOSE_HOME/scripts/ideate-run.sh" end "$SLUG" 3
@@ -394,9 +419,21 @@ Agent B: Devil's Advocate  (agents/ideate-devils-advocate.md)
   Output: (appended to adversarial-review.md)
 ```
 
-Merge into `validation/adversarial-review.md`. Any BLOCKING items must be
-addressed by the synthesizer. If unresolvable, document in OPEN-QUESTIONS.md
-with both positions preserved — never pause the pipeline.
+Merge into `validation/adversarial-review.md`.
+
+**BLOCKING Resolution (runs before Phase 4 ends):**
+For each BLOCKING finding, spawn a Resolver Agent:
+```
+Task → Resolver: "BLOCKING: [finding from Red Team / Devil's Advocate].
+       Investigate this threat. Propose a concrete mitigation.
+       WebSearch for real-world precedents (post-mortems, regulatory cases).
+       Output: MITIGATION: [what to do], RESIDUAL_RISK: [what remains],
+       CONFIDENCE: [0.0-1.0], SOURCES: [URLs]
+       Record as ADR-NNN in decisions/"
+```
+After resolvers complete, orchestrator updates adversarial-review.md:
+each BLOCKING item now has a MITIGATED status with ADR reference.
+Concerning items are addressed by the synthesizer in Phase 5.
 
 ```bash
 bash "$PROPOSE_HOME/scripts/ideate-run.sh" end "$SLUG" 4
@@ -414,14 +451,22 @@ Read `agents/ideate-synthesizer.md`. Synthesizer receives EVERYTHING:
 - Cross-validation conflict report
 - Adversarial review
 
+By Phase 5, all Blocking conflicts and BLOCKING adversarial findings are already
+resolved (via Resolver Agents in Phases 3-4). The synthesizer works from clean inputs.
+
 Synthesizer MUST:
-1. Resolve every item in conflict-report.md — document resolution rationale
-2. Address every BLOCKING item from adversarial-review.md
+1. Apply all resolved ADRs — integrate decisions into the product recommendation
+2. Address remaining Concerning items (lower severity — synthesizer resolves inline)
 3. Produce coherent product recommendation organized by pillar
-4. Run additional WebSearch to fill gaps before finalizing
-5. Mark unresolvable items `NEEDS_CLARIFICATION` — write them to OPEN-QUESTIONS.md, never pause
-6. Preserve dissenting views in a "Dissenting Views" section
+4. Run additional WebSearch to fill any remaining gaps
+5. Make best-judgment calls on uncertainties — document rationale, never defer
+6. Preserve dissenting views in a "Dissenting Views" section (overruled positions)
 7. Cite research using [N] notation for all quantitative claims
+
+**No NEEDS_CLARIFICATION allowed.** If the synthesizer encounters a genuine
+business-only decision (budget range, hiring timeline, go-to-market geography),
+write it to OPEN-QUESTIONS.md — but technical and product decisions are resolved
+by the synthesizer with WebSearch + reasoning.
 
 Output: `synthesis.md` (input to Phase 6 variant agents and final PRD)
 
@@ -548,7 +593,9 @@ Returns exit 1 on any critical failure.
 Structural:
 - [ ] Every pillar has a dedicated `pillars/pillar-[name].md`
 - [ ] `validation/cross-validation.md` exists and covers all pillar pairs
-- [ ] Every item in `validation/conflict-report.md` is RESOLVED or NEEDS_CLARIFICATION
+- [ ] Every item in `validation/conflict-report.md` is RESOLVED with an ADR reference
+- [ ] Every BLOCKING item in `validation/adversarial-review.md` is MITIGATED with an ADR
+- [ ] No NEEDS_CLARIFICATION for technical/product decisions — only business-only questions in OPEN-QUESTIONS.md
 - [ ] `validation/adversarial-review.md` has no unaddressed BLOCKING items
 - [ ] `technical/pillar-sequencing.md` exists with dependency rationale
 - [ ] `pillars/INDEX.md` links to all pillar files
@@ -628,10 +675,12 @@ Else:
 
 ### When Teams Are Used
 
-Product mode only, on the three heaviest parallel phases:
+Product mode only. Teams unlock real-time debate and resolution — not just parallelism.
+
 - Phase 0.5 — 3 landscape researcher teammates (true parallel)
 - Phase 2 — each pillar is a teammate with isolated file ownership (true parallel)
-- Phase 4 — Red Team + Devil's Advocate as teammates (can message each other)
+- Phase 3 — Cross-validators + Resolvers as teammates (real-time debate)
+- Phase 4 — Red Team + Devil's Advocate as teammates (live adversarial exchange)
 
 ### Team Workflow
 
@@ -664,17 +713,42 @@ File ownership: .claude/ideation/{slug}/pillar-[name]-research.md,
 
 No two teammates may own the same file. Main agent assembles final outputs only.
 
-### Phase 4 Adversarial Cross-Messaging
+### Phase 3 Real-Time Conflict Resolution (teams-only)
+
+With teams, cross-validation and resolution happen as a live conversation:
 
 ```
-Red Team → reads all pillar outputs → drafts adversarial findings
-Red Team → SendMessage(to: "devils-advocate", "Flagging [X] as Blocking — concur?")
-Devil's Advocate → may adjust severity based on peer confirmation
-Both → write output files → TaskUpdate(completed)
+coherence-validator → finds conflict between Pillar A and Pillar B
+coherence-validator → SendMessage(to: "integration-architect",
+    "Pillar A assumes JWT, Pillar B assumes sessions — which is correct?")
+integration-architect → researches, replies via SendMessage with recommendation
+coherence-validator → if they agree, writes ADR directly
+coherence-validator → if they disagree, SendMessage(to: "lead") for arbitration
+Lead agent reads both positions → makes final call → writes ADR
 ```
+
+Resolvers are NOT separate spawns in teams mode — the validators resolve
+conflicts themselves through real-time messaging. This eliminates the
+resolver round-trip overhead.
+
+### Phase 4 Adversarial Live Debate (teams-only)
+
+```
+Red Team → drafts findings → SendMessage(to: "devils-advocate",
+    "I flagged [X] as Blocking. Here's my evidence: [URL]. Agree?")
+Devil's Advocate → may escalate severity or downgrade with counter-evidence
+Both → SendMessage(to: "lead") with final severity + proposed mitigation
+Lead agent → approves mitigation or provides alternative → writes ADR
+```
+
+BLOCKING items are resolved in real-time, not deferred to Phase 5.
 
 ### Fallback Guarantee
 
-Every teams-mode phase has an exact equivalent in the standard subagent phases above.
+Every teams-mode phase has an exact equivalent in the standard subagent phases.
+Standard mode: Resolver Agents handle conflicts sequentially.
+Teams mode: Teammates resolve via SendMessage in real-time.
+Output files and quality checks are identical regardless of path.
+
 If TeamCreate raises any error, log and fall back to standard subagents.
 Output files and quality checks are identical in both paths.
