@@ -1,0 +1,12 @@
+{
+  "name": "propose",
+  "version": "1.1.0",
+  "description": "Recursive product ideation engine — converts fragment ideas into full, research-backed product proposals through multi-agent expansion with research, critique, fact-checking, and variant generation.",
+  "author": {
+    "name": "khang"
+  },
+  "repository": "https://github.com/khanglvm/claude-plugin",
+  "license": "MIT",
+  "keywords": ["ideation", "product", "proposal", "prd", "brainstorm", "research"],
+  "skills": "./skills/"
+}
