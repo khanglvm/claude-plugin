@@ -80,6 +80,12 @@ Ask before expanding — surfaces fatal assumptions early:
 Lock answers into `idea-brief.md`. Use Propose→Refine→Lock: propose concrete options,
 follow threads not checklists, switch to freeform if user says "let me explain."
 
+**CRITICAL: Phase 0 is the ONLY interactive phase.** After `end "$SLUG" 0`, the
+entire pipeline runs autonomously with zero user prompts. Conflicts, uncertainties,
+and unresolvable items are documented in the output files (OPEN-QUESTIONS.md,
+conflict-report.md, NEEDS_CLARIFICATION sections) — never surfaced as blocking
+gates or AskUserQuestion calls. The user reviews everything post-assembly.
+
 ```bash
 bash "$PROPOSE_HOME/scripts/ideate-run.sh" end "$SLUG" 0
 ```
@@ -357,7 +363,8 @@ Agent B: Integration Architect
 After both agents complete, main agent merges outputs and produces:
 `validation/conflict-report.md` — lists every contradiction found, severity
 (Blocking | Concerning | Minor), and which pillars are involved. The synthesizer
-in Phase 5 MUST resolve each item. Critical conflicts may be flagged for user decision.
+in Phase 5 MUST resolve each item or document it as NEEDS_CLARIFICATION in
+OPEN-QUESTIONS.md. Never pause the pipeline — the user reviews after assembly.
 
 ```bash
 bash "$PROPOSE_HOME/scripts/ideate-run.sh" end "$SLUG" 3
@@ -388,7 +395,8 @@ Agent B: Devil's Advocate  (agents/ideate-devils-advocate.md)
 ```
 
 Merge into `validation/adversarial-review.md`. Any BLOCKING items must be
-addressed by the synthesizer or escalated to user.
+addressed by the synthesizer. If unresolvable, document in OPEN-QUESTIONS.md
+with both positions preserved — never pause the pipeline.
 
 ```bash
 bash "$PROPOSE_HOME/scripts/ideate-run.sh" end "$SLUG" 4
@@ -411,7 +419,7 @@ Synthesizer MUST:
 2. Address every BLOCKING item from adversarial-review.md
 3. Produce coherent product recommendation organized by pillar
 4. Run additional WebSearch to fill gaps before finalizing
-5. Mark unresolvable items `NEEDS_CLARIFICATION` with a specific question for the user
+5. Mark unresolvable items `NEEDS_CLARIFICATION` — write them to OPEN-QUESTIONS.md, never pause
 6. Preserve dissenting views in a "Dissenting Views" section
 7. Cite research using [N] notation for all quantitative claims
 
