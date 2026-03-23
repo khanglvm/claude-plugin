@@ -1,0 +1,23 @@
+{
+  "name": "khang-plugins",
+  "owner": {
+    "name": "khang",
+    "email": ""
+  },
+  "metadata": {
+    "description": "Claude Code plugins by khang",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "propose",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/khanglvm/claude-plugin.git",
+        "path": "propose",
+        "ref": "main"
+      },
+      "description": "Recursive product ideation engine — converts fragment ideas into full, research-backed product proposals through multi-agent expansion."
+    }
+  ]
+}
