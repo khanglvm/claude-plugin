@@ -7,5 +7,6 @@
   },
   "repository": "https://github.com/khanglvm/claude-plugin",
   "license": "MIT",
-  "keywords": ["workflow", "implementation", "state-machine", "testing", "code-review", "planning"]
+  "keywords": ["workflow", "implementation", "state-machine", "testing", "code-review", "planning"],
+  "skills": "./skills/"
 }
