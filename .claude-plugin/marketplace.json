@@ -18,6 +18,16 @@
         "ref": "main"
       },
       "description": "Recursive product ideation engine — converts fragment ideas into full, research-backed product proposals through multi-agent expansion."
+    },
+    {
+      "name": "proposal",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/khanglvm/claude-plugin.git",
+        "path": "proposal",
+        "ref": "main"
+      },
+      "description": "Deterministic feature implementation workflow with state-tracked checkpoints, mandatory agent delegation, and completion audit."
     }
   ]
 }

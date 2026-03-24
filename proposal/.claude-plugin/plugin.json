@@ -1,0 +1,11 @@
+{
+  "name": "proposal",
+  "version": "1.0.0",
+  "description": "Deterministic feature implementation workflow with state-tracked checkpoints, mandatory agent delegation, and completion audit.",
+  "author": {
+    "name": "khang"
+  },
+  "repository": "https://github.com/khanglvm/claude-plugin",
+  "license": "MIT",
+  "keywords": ["workflow", "implementation", "state-machine", "testing", "code-review", "planning"]
+}
