@@ -147,9 +147,12 @@ def improve_criterion(skill_config: dict, criterion_id: str, criterion: dict,
         )
     else:
         eval_text = criterion['eval_prompt'].replace('{skill_path}', skill_path)
+        # Strip raw scoring scale language before embedding in improve prompt
+        eval_text = re.sub(r'\n[ \t]*[-*]?[ \t]*\d+[-\u2013]\d+[ \t]*:.*', '', eval_text)
+        eval_text = re.sub(r'(?i)score\s+\d+[-\u2013]\d+[^.\n]*\.?[ \t]*\n?', '', eval_text)
         requirements = (
             "The following are requirements the evaluator checks for "
-            "(reframed from scoring rubric — treat as edit directives):\n\n"
+            "(treat as edit directives — each must be clearly present):\n\n"
             + eval_text
         )
 
@@ -180,7 +183,7 @@ def improve_criterion(skill_config: dict, criterion_id: str, criterion: dict,
 {file_facts}
 
 ## What Needs Improvement
-Criterion: {criterion['name']} (current score: {current_score}/10)
+Criterion: {criterion['name']}
 Target files: {target_files}
 
 Requirements (what the evaluator checks for):
@@ -215,20 +218,37 @@ RULES:
 
 
 def refine_criterion(skill_config: dict, cid: str, criterion: dict, state: dict) -> bool:
-    """Auto-refine a stuck criterion's eval_prompt. Returns True if criteria file updated."""
+    """Auto-refine a stuck criterion's eval_prompt or checklist. Returns True if criteria file updated."""
     skill_name = skill_config["skill_name"]
     skill_path = skill_config["skill_path"]
     fail_info = state.get("failures", {}).get(cid, {})
 
-    print(f"  [REFINE] Auto-refining eval_prompt for {cid} ({criterion['name']})...")
+    is_checklist = "checklist" in criterion
 
-    refine_prompt = f"""You are improving a skill evaluation criterion that is stuck — it keeps scoring low but the improvement agent can't figure out how to fix it. The eval_prompt is likely too vague, unreachable, or poorly calibrated.
+    if is_checklist:
+        print(f"  [REFINE] Auto-refining checklist for {cid} ({criterion['name']})...")
+        checklist_text = "\n".join(
+            f"  - [{c['points']}pt] {c['item']}" for c in criterion["checklist"]
+        )
+        current_eval_text = f"CURRENT CHECKLIST:\n{checklist_text}"
+        return_format = (
+            '{"refined_checklist": [{"item": "<description>", "points": <int>}], '
+            '"reasoning": "<why the old checklist was stuck>"}'
+        )
+    else:
+        print(f"  [REFINE] Auto-refining eval_prompt for {cid} ({criterion['name']})...")
+        current_eval_text = f"CURRENT EVAL_PROMPT:\n{criterion['eval_prompt']}"
+        return_format = (
+            '{"refined_eval_prompt": "<new eval_prompt text>", '
+            '"reasoning": "<why the old one was stuck>"}'
+        )
+
+    refine_prompt = f"""You are improving a skill evaluation criterion that is stuck — it keeps scoring low but the improvement agent can't figure out how to fix it. The {'checklist' if is_checklist else 'eval_prompt'} is likely too vague, unreachable, or poorly calibrated.
 
 CRITERION: {cid} — {criterion['name']}
 WEIGHT: {criterion['weight']}
 TARGET FILES: {', '.join(criterion.get('target_files', []))}
-CURRENT EVAL_PROMPT:
-{criterion['eval_prompt']}
+{current_eval_text}
 
 FAILURE HISTORY: {fail_info.get('total', 0)} total failures, {fail_info.get('consecutive', 0)} consecutive
 
@@ -236,14 +256,14 @@ SKILL LOCATION: {skill_path}
 
 Read the target files at {skill_path} to understand what the skill actually contains.
 
-Then rewrite the eval_prompt to be:
+Then rewrite the {'checklist items' if is_checklist else 'eval_prompt'} to be:
 1. More specific — concrete checklist items, not vague qualities
 2. Achievable — scoring criteria the improvement agent can actually address
 3. Well-calibrated — current content should score at least 3-4, not 0
 4. Actionable — each checklist item maps to a specific edit
 
 Return ONLY a JSON object:
-{{"refined_eval_prompt": "<new eval_prompt text>", "reasoning": "<why the old one was stuck>"}}
+{return_format}
 Nothing else."""
 
     refine_model = resolve_improve_model(skill_path, criterion)
@@ -251,45 +271,73 @@ Nothing else."""
                         model=refine_model, max_turns=5)
 
     try:
+        parsed_data = None
+        # Tier 1: line-by-line JSON parse
+        search_key = "refined_checklist" if is_checklist else "refined_eval_prompt"
         for line in output.split("\n"):
             line = line.strip()
-            if "{" in line and "refined_eval_prompt" in line:
+            if "{" in line and search_key in line:
                 try:
-                    data = json.loads(line)
-                    new_prompt = data.get("refined_eval_prompt")
-                    if new_prompt and len(new_prompt) > 20:
-                        criteria_path = CRITERIA_DIR / f"{skill_name}.json"
+                    parsed_data = json.loads(line)
+                    break
+                except json.JSONDecodeError:
+                    pass
+        # Tier 2: regex block extraction
+        if not parsed_data:
+            json_match = re.search(r'\{[^{}]*"' + search_key + r'"', output, re.DOTALL)
+            if json_match:
+                # Find the full JSON object starting from this match
+                start = json_match.start()
+                brace_depth = 0
+                for i in range(start, len(output)):
+                    if output[i] == '{':
+                        brace_depth += 1
+                    elif output[i] == '}':
+                        brace_depth -= 1
+                        if brace_depth == 0:
+                            try:
+                                parsed_data = json.loads(output[start:i+1])
+                            except json.JSONDecodeError:
+                                pass
+                            break
+
+        if parsed_data:
+            criteria_path = CRITERIA_DIR / f"{skill_name}.json"
+            reason = parsed_data.get("reasoning", "N/A")
+
+            if is_checklist:
+                new_checklist = parsed_data.get("refined_checklist")
+                if new_checklist and isinstance(new_checklist, list) and len(new_checklist) >= 2:
+                    # Validate checklist items have required fields
+                    valid = all("item" in c and "points" in c for c in new_checklist)
+                    if valid:
                         with open(criteria_path) as f:
                             config = json.load(f)
-                        config["criteria"][cid]["eval_prompt"] = new_prompt
+                        config["criteria"][cid]["checklist"] = new_checklist
                         with open(criteria_path, "w") as f:
                             json.dump(config, f, indent=2)
-                        skill_config["criteria"][cid]["eval_prompt"] = new_prompt
+                        skill_config["criteria"][cid]["checklist"] = new_checklist
                         state["failures"][cid] = {"consecutive": 0, "total": 0, "cooldown_until": 0}
                         if cid in state.get("parked", []):
                             state["parked"].remove(cid)
-                        reason = data.get("reasoning", "N/A")
-                        print(f"  [REFINE] Updated eval_prompt for {cid}")
+                        print(f"  [REFINE] Updated checklist for {cid} ({len(new_checklist)} items)")
                         print(f"  [REFINE] Reason: {reason}")
                         return True
-                except json.JSONDecodeError:
-                    pass
-        match = re.search(r'\{[^{}]*"refined_eval_prompt"\s*:\s*"((?:[^"\\]|\\.)*)?"', output, re.DOTALL)
-        if match:
-            new_prompt = match.group(1).replace('\\"', '"').replace('\\n', '\n')
-            if new_prompt and len(new_prompt) > 20:
-                criteria_path = CRITERIA_DIR / f"{skill_name}.json"
-                with open(criteria_path) as f:
-                    config = json.load(f)
-                config["criteria"][cid]["eval_prompt"] = new_prompt
-                with open(criteria_path, "w") as f:
-                    json.dump(config, f, indent=2)
-                skill_config["criteria"][cid]["eval_prompt"] = new_prompt
-                state["failures"][cid] = {"consecutive": 0, "total": 0, "cooldown_until": 0}
-                if cid in state.get("parked", []):
-                    state["parked"].remove(cid)
-                print(f"  [REFINE] Updated eval_prompt for {cid} (fallback parse)")
-                return True
+            else:
+                new_prompt = parsed_data.get("refined_eval_prompt")
+                if new_prompt and len(new_prompt) > 20:
+                    with open(criteria_path) as f:
+                        config = json.load(f)
+                    config["criteria"][cid]["eval_prompt"] = new_prompt
+                    with open(criteria_path, "w") as f:
+                        json.dump(config, f, indent=2)
+                    skill_config["criteria"][cid]["eval_prompt"] = new_prompt
+                    state["failures"][cid] = {"consecutive": 0, "total": 0, "cooldown_until": 0}
+                    if cid in state.get("parked", []):
+                        state["parked"].remove(cid)
+                    print(f"  [REFINE] Updated eval_prompt for {cid}")
+                    print(f"  [REFINE] Reason: {reason}")
+                    return True
     except Exception as e:
         print(f"  [REFINE] Failed to parse refinement output: {e}")
 

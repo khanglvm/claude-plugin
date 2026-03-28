@@ -1,6 +1,8 @@
 """CLI entry point — argparse and main()."""
 
 import argparse
+import signal
+import sys
 
 from .config import (
     DISCOVER_INTERVAL, GRADUATE_THRESHOLD, MODEL_PROFILES,
@@ -10,6 +12,18 @@ from .agents import domain_research
 from .calibration import check_calibration, create_calibration_from_current
 from .loop import run_loop
 from .state import load_criteria, load_state, request_stop, save_state, DATA_DIR
+
+
+def _setup_signal_handlers(skill_name: str):
+    """Register SIGINT/SIGTERM handlers for graceful shutdown."""
+    def handler(signum, frame):
+        sig_name = signal.Signals(signum).name
+        print(f"\n  [SIGNAL] Received {sig_name}. Requesting graceful stop...")
+        request_stop(skill_name)
+        # If signaled twice, force exit
+        signal.signal(signum, lambda s, f: sys.exit(1))
+    signal.signal(signal.SIGINT, handler)
+    signal.signal(signal.SIGTERM, handler)
 
 
 def main():
@@ -137,5 +151,6 @@ def main():
         else:
             print(f"  [DOMAIN RESEARCH] No results (web search may have failed)")
 
+    _setup_signal_handlers(args.skill)
     run_loop(args.skill, args.hours, args.parallel, args.cycle_minutes,
              args.skill_path, args.auto_refine, args.max_loops, args.discover_interval)

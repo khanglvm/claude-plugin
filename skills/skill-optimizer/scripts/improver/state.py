@@ -36,10 +36,19 @@ def load_state(skill_name: str) -> dict:
 
 
 def save_state(skill_name: str, state: dict):
-    """Persist state."""
+    """Persist state atomically — write to temp file, then rename."""
     path = DATA_DIR / f"state-{skill_name}.json"
-    with open(path, "w") as f:
-        json.dump(state, f, indent=2)
+    tmp = path.with_suffix(".tmp")
+    try:
+        content = json.dumps(state, indent=2)
+        json.loads(content)  # validate before writing
+        with open(tmp, "w") as f:
+            f.write(content)
+        tmp.rename(path)  # atomic on POSIX
+    except Exception:
+        if tmp.exists():
+            tmp.unlink()
+        raise
 
 
 def log_result(skill_name: str, result: dict):

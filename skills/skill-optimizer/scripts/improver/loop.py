@@ -216,9 +216,16 @@ def run_cycle(skill_name: str, skill_config: dict, state: dict,
         record_success(state, target_cid)
         kept = True
         commit_msg = f"autoresearch: improve {target_cid} ({target_cdef['name']}) {current_score}->{new_score}"
-        subprocess.run(["git", "add", "."], capture_output=True, cwd=skill_path)
-        subprocess.run(["git", "commit", "-m", commit_msg], capture_output=True, cwd=skill_path)
-        print(f"  Committed: {commit_msg}")
+        add_r = subprocess.run(["git", "add", "."], capture_output=True, cwd=skill_path)
+        if add_r.returncode != 0:
+            print(f"  [GIT WARN] git add failed: {add_r.stderr.decode() if isinstance(add_r.stderr, bytes) else add_r.stderr}")
+        commit_r = subprocess.run(["git", "commit", "-m", commit_msg], capture_output=True, cwd=skill_path)
+        if commit_r.returncode != 0:
+            stderr = commit_r.stderr.decode() if isinstance(commit_r.stderr, bytes) else (commit_r.stderr or "")
+            if "nothing to commit" not in stderr:
+                print(f"  [GIT WARN] git commit failed: {stderr[:200]}")
+        else:
+            print(f"  Committed: {commit_msg}")
     elif target_improved and total_regressed:
         print(f"\n  REGRESSION: {target_cid} {current_score} → {new_score}, but total {total} → {new_total}. Reverting...")
         for f in modified:
@@ -309,7 +316,25 @@ def run_loop(skill_name: str, hours: float, parallel: int, cycle_minutes: int = 
         cycle += 1
         cycle_start = time.time()
 
-        result = run_cycle(skill_name, skill_config, state, parallel, auto_refine)
+        try:
+            result = run_cycle(skill_name, skill_config, state, parallel, auto_refine)
+        except Exception as e:
+            import traceback
+            elapsed = time.time() - cycle_start
+            last_target = state.get("last_target", "unknown")
+            print(f"\n  [CRASH] Cycle {cycle} failed after {elapsed:.0f}s: {e}")
+            print(f"  [CRASH] Target was: {last_target}")
+            traceback.print_exc()
+            # Record failure for the target criterion so it gets cooldown/parked
+            if last_target and last_target in skill_config.get("criteria", {}):
+                from .lifecycle import record_failure as _rf
+                _rf(state, last_target)
+            save_state(skill_name, state)
+            # Revert any uncommitted changes from the failed cycle
+            skill_path = skill_config.get("skill_path", ".")
+            subprocess.run(["git", "checkout", "."], capture_output=True, cwd=skill_path)
+            print(f"  [CRASH] State saved, working tree reverted. Continuing...")
+            continue
 
         elapsed = time.time() - cycle_start
 

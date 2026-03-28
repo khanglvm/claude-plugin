@@ -397,7 +397,15 @@ def evaluate_all(skill_config: dict, parallel: int = 2, previous_scores: dict = 
                 conf_tag = f" conf={result['confidence']}" if result.get("confidence") else ""
                 print(f"    {cid} ({criteria[cid]['name']}): {result['score']}/10{conf_tag}")
             except Exception as e:
-                results[cid] = {"score": 0, "confidence": "low", "weighted_score": 0.0}
-                print(f"    {cid}: ERROR - {e}")
+                # Use previous score as fallback instead of 0 to avoid false regressions
+                prev_val = prev.get(cid)
+                if isinstance(prev_val, dict):
+                    fallback_result = {**prev_val, "confidence": "low"}
+                    results[cid] = fallback_result
+                    print(f"    {cid}: EVAL ERROR ({e}) — using previous score {prev_val.get('score', 0)}")
+                else:
+                    fallback_score = prev_val if isinstance(prev_val, (int, float)) else 0
+                    results[cid] = {"score": fallback_score, "confidence": "low", "weighted_score": 0.0}
+                    print(f"    {cid}: EVAL ERROR ({e}) — using fallback score {fallback_score}")
 
     return results
