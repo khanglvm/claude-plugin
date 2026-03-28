@@ -185,9 +185,9 @@ def evaluate_criterion(skill_config: dict, criterion_id: str, criterion: dict,
     target_files_str = " ".join(target_files)
     file_facts = precompute_file_facts(skill_path, target_files)
 
-    prompt = f"""You are a rigorous skill quality auditor. Score using EVIDENCE-BASED methodology.
+    prompt = f"""CRITERION: {criterion_id} — {criterion['name']}
 
-CRITERION: {criterion_id} — {criterion['name']}
+You are a rigorous skill quality auditor. Score using EVIDENCE-BASED methodology.
 
 EVALUATION INSTRUCTIONS:
 {eval_prompt}

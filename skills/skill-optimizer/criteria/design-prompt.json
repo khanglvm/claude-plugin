@@ -5,240 +5,267 @@
     "D1": {
       "name": "Anti-Pattern Avoidance",
       "weight": 10,
-      "target_files": [
-        "SKILL.md",
-        "references/section-patterns.md"
-      ],
-      "eval_prompt": "Read the design-prompt skill at {skill_path}. Score 0-10: Does the skill's instructions and references effectively prevent these AI design cliches? (1) Small badge/tag above headings, (2) Centered badge\u2192heading\u2192subtext\u2192CTA stacks, (3) Uniform grid-cols-3 cards, (4) Floating decorative shapes with bob animation, (5) Basic rectangular containers only. Score 10 = impossible to produce these patterns when following the skill. Score 0 = no anti-pattern guidance."
+      "target_files": ["SKILL.md", "references/anti-patterns.md", "references/section-patterns.md"],
+      "checklist": [
+        {"item": "SKILL.md has a numbered or bulleted 'Anti-Pattern' or 'Pitfall' section listing at least 5 distinct forbidden patterns with prohibitive language ('NO', 'NEVER', or 'forbidden')", "points": 2},
+        {"item": "SKILL.md explicitly bans 'badge' or 'pill' above headings (the word 'badge' appears in a prohibition context)", "points": 2},
+        {"item": "SKILL.md explicitly bans the centered 'badge/heading/subtext/CTA' stack pattern", "points": 2},
+        {"item": "SKILL.md explicitly bans 'floating decorative shapes' or 'blobs' or 'bob animation'", "points": 2},
+        {"item": "references/anti-patterns.md exists with at least 40 lines and each forbidden pattern has a concrete REPLACEMENT technique (not just 'don't do X' but 'instead do Y' with specific CSS or layout alternative)", "points": 2}
+      ]
     },
     "D2": {
       "name": "Implementation Readiness",
       "weight": 10,
-      "target_files": [
-        "references/prompt-template.md"
-      ],
-      "eval_prompt": "Read the design-prompt skill output template at {skill_path}/references/prompt-template.md. Score 0-10: Could a coding agent take this template's output and build a working page WITHOUT follow-up questions? Check: CSS variables complete? Tailwind classes real? Font imports specified? Dependencies listed? Responsive breakpoints defined?"
+      "target_files": ["references/prompt-template.md"],
+      "checklist": [
+        {"item": "prompt-template.md contains a CSS variable block with ALL of: --background, --foreground, --primary, --accent, --muted, --border (at least 6 of these variable names present)", "points": 2},
+        {"item": "prompt-template.md references Google Fonts import (the string 'fonts.googleapis.com' or 'Google Fonts' appears)", "points": 2},
+        {"item": "prompt-template.md includes Tailwind config extension with fontFamily keys (strings 'font-heading' AND 'font-body' both appear)", "points": 2},
+        {"item": "prompt-template.md includes responsive rules (at least 2 of: 'sm:', 'md:', 'lg:', 'xl:', 'responsive', 'breakpoint', 'mobile' appear)", "points": 2},
+        {"item": "prompt-template.md includes a dependencies or packages section (the word 'dependencies' or 'packages' appears as a heading or label)", "points": 2}
+      ]
     },
     "D3": {
       "name": "Output Completeness",
       "weight": 8,
-      "target_files": [
-        "SKILL.md",
-        "references/prompt-template.md"
-      ],
-      "eval_prompt": "Read {skill_path}/SKILL.md and references/prompt-template.md. Score 0-10: Does the output template capture ALL design dimensions? Check presence of: (1) Typography system, (2) Color variables, (3) Spacing system, (4) Effects/animations, (5) Section layouts, (6) Responsive rules, (7) Accessibility notes, (8) Dependencies, (9) Component patterns, (10) Dark/light mode. 1 point each."
+      "target_files": ["references/prompt-template.md"],
+      "checklist": [
+        {"item": "prompt-template.md has a Typography section (heading containing 'Typography' or 'Font')", "points": 1},
+        {"item": "prompt-template.md has a Color system section (heading containing 'Color' or CSS variables with HSL values)", "points": 1},
+        {"item": "prompt-template.md has a Spacing section (word 'spacing' or 'padding' or 'gap' in a heading or labeled section)", "points": 1},
+        {"item": "prompt-template.md has an Effects or Animation section (heading containing 'Effect' or 'Animation')", "points": 1},
+        {"item": "prompt-template.md has Section layout specs (heading containing 'Section' with layout details)", "points": 1},
+        {"item": "prompt-template.md has Responsive rules (word 'Responsive' in a heading)", "points": 1},
+        {"item": "prompt-template.md mentions accessibility (word 'accessibility' or 'a11y' or 'aria' or 'contrast' appears)", "points": 1},
+        {"item": "prompt-template.md has a Dependencies section (heading containing 'Dependencies' or 'Packages')", "points": 1},
+        {"item": "prompt-template.md has a Key Patterns or Component patterns section (heading containing 'Pattern' or 'Component')", "points": 1},
+        {"item": "prompt-template.md mentions dark/light mode (strings 'dark' and 'light' or 'theme' appear in mode-switching context)", "points": 1}
+      ]
     },
     "D4": {
       "name": "CSS/Tailwind Correctness",
       "weight": 6,
-      "target_files": [
-        "references/design-presets.md",
-        "references/effects-catalog.md"
-      ],
-      "eval_prompt": "Read {skill_path}/references/design-presets.md and effects-catalog.md. Score 0-10: Are CSS values valid? Check: HSL format correct? Tailwind classes exist in v3/v4? Google Font names real? Animation keyframes syntactically valid? Custom properties properly declared?"
+      "target_files": ["references/design-presets.md", "references/effects-catalog.md", "references/color-palettes.md"],
+      "checklist": [
+        {"item": "color-palettes.md uses HSL format for color variable definitions (numbers like '220 15% 8%' or 'hsl(220, 15%, 8%)') — no hex #RRGGBB or rgb() in CSS variable assignments", "points": 2},
+        {"item": "effects-catalog.md Tailwind classes are real v3/v4 utilities — spot-check 5 classes: recognizable standard classes (bg-*, text-*, rounded-*, shadow-*, blur-*, backdrop-*, etc.), not invented names", "points": 2},
+        {"item": "design-presets.md font names are real Google Fonts — spot-check 5 font names: well-known real fonts (Inter, Space Grotesk, JetBrains Mono, Instrument Serif, Barlow, etc.)", "points": 2},
+        {"item": "effects-catalog.md keyframe animations use valid CSS syntax: @keyframes with percentage stops or from/to, valid property names (transform, opacity, filter, etc.)", "points": 2},
+        {"item": "CSS custom properties across all 3 files use valid --variable-name: value syntax (double-dash prefix, no spaces in variable name)", "points": 2}
+      ]
     },
     "D5": {
       "name": "Conversation Efficiency",
       "weight": 5,
-      "target_files": [
-        "SKILL.md"
-      ],
-      "eval_prompt": "Read {skill_path}/SKILL.md conversation flow. Score 0-10: Can the 6-phase flow complete in 6-8 turns? Are there shortcuts for experienced users? Does Phase 5 (sections) avoid context fatigue with 8-12 sections? Is there a bundled/batch approach?"
+      "target_files": ["SKILL.md"],
+      "eval_prompt": "Read {skill_path}/SKILL.md conversation flow. Score 0-10 using STRICT checks:\n\n(A) PHASE COUNT (0-3 pts): Count numbered phases. 5-6 phases = 3pts. 7-8 = 2pts. 9+ = 1pt. Under 5 = 0pts.\n\n(B) CHECKPOINT EFFICIENCY (0-3 pts): Count 'CHECKPOINT' markers. Checkpoints should equal phase count (one per phase). Checkpoints = phases +/-1 = 3pts. 2+ fewer checkpoints than phases = 1pt. No checkpoints = 0pts.\n\n(C) BATCH APPROACH (0-2 pts): Does Phase 5 (sections) offer a batch or grouped approach for 8-12 sections without requiring individual turns per section? Explicit batch = 2pts. Some grouping = 1pt. One-per-turn only = 0pts.\n\n(D) FAST PATH (0-2 pts): Shortcut for experienced users who provide all info upfront? Explicit shortcut = 2pts. Implied = 1pt. None = 0pts.\n\nSum A+B+C+D. Max 10."
     },
     "D8": {
       "name": "Layout Creativity",
       "weight": 8,
-      "target_files": [
-        "references/section-patterns.md"
-      ],
-      "eval_prompt": "Read {skill_path}/references/section-patterns.md. Score 0-10: How many UNIQUE layout compositions exist (not slight variations)? Score: 0-2 layouts=2, 3-5=4, 6-8=6, 9-12=8, 13+=10. Each layout must be genuinely different in spatial arrangement, not just different content."
+      "target_files": ["references/section-patterns.md"],
+      "eval_prompt": "Read {skill_path}/references/section-patterns.md completely. Count UNIQUE layout compositions by SPATIAL GEOMETRY — two layouts are different only if their spatial arrangement differs (e.g., 'asymmetric split' vs 'stacked overlap' vs 'orbital/radial' vs 'masonry cascade' vs 'full-bleed typography'). Column count variations ('3-col grid' vs '4-col grid') are ONE geometry.\n\nMethod: Find each named layout pattern. Note its spatial geometry in 3 words. Group by geometry. Count groups.\n\nScore STRICTLY: 0-3 geometries = 2. 4-6 = 4. 7-9 = 6. 10-12 = 8. 13+ = 10."
     },
     "D11": {
       "name": "Inspiration Database Breadth",
       "weight": 10,
-      "target_files": [
-        "references/inspiration-nature.md",
-        "references/inspiration-urban.md",
-        "references/inspiration-material.md",
-        "references/inspiration-era.md",
-        "references/inspiration-art.md",
-        "references/inspiration-cinema.md",
-        "references/inspiration-mood.md"
-      ],
-      "eval_prompt": "Count total atmospheric/immersive themes across all inspiration-*.md files in {skill_path}/references/. Score 0-10: 0-5 themes=1, 6-15=3, 16-30=5, 31-45=7, 46-60=9, 60+=10. Each theme must have ingredients table + color schema to count."
+      "target_files": ["references/inspiration-nature.md", "references/inspiration-urban.md", "references/inspiration-material.md", "references/inspiration-era.md", "references/inspiration-art.md", "references/inspiration-cinema.md", "references/inspiration-mood.md"],
+      "checklist": [
+        {"item": "inspiration-nature.md contains at least 5 named themes, each with a markdown ingredients table (3+ data rows) AND color schema with HSL values", "points": 2},
+        {"item": "inspiration-urban.md contains at least 5 named themes, each with ingredients table AND color schema with HSL values", "points": 2},
+        {"item": "inspiration-material.md contains at least 5 named themes, each with ingredients table AND color schema with HSL values", "points": 2},
+        {"item": "inspiration-art.md contains at least 3 named themes, each with ingredients table AND color schema with HSL values", "points": 1},
+        {"item": "inspiration-era.md contains at least 3 named themes, each with ingredients table AND color schema with HSL values", "points": 1},
+        {"item": "inspiration-cinema.md contains at least 3 named themes, each with ingredients table AND color schema with HSL values", "points": 1},
+        {"item": "inspiration-mood.md contains at least 5 named themes, each with ingredients table AND color schema with HSL values", "points": 1}
+      ]
     },
     "D12": {
       "name": "Real-World Visual Translation",
       "weight": 8,
-      "target_files": [
-        "references/inspiration-nature.md",
-        "references/inspiration-urban.md"
-      ],
-      "eval_prompt": "Sample 5 themes from inspiration files in {skill_path}/references/. Score 0-10: Does each theme translate a REAL sensory experience into specific CSS? Check per theme: (1) Sensory anchors described, (2) CSS techniques are specific not vague, (3) At least 6 composable ingredients, (4) Color schema with HSL values, (5) Mix-and-match notes. 2 points per theme that passes all 5."
+      "target_files": ["references/inspiration-nature.md", "references/inspiration-urban.md"],
+      "checklist": [
+        {"item": "The FIRST theme in inspiration-nature.md has sensory anchors (words evoking sight, sound, touch, or smell — not just abstract color names)", "points": 2},
+        {"item": "The FIRST theme in inspiration-nature.md lists at least 6 composable CSS ingredients (distinct techniques: gradient, blur, texture, shadow, animation, filter, etc.)", "points": 2},
+        {"item": "The FIRST theme in inspiration-urban.md has sensory anchors AND at least 6 composable CSS ingredients", "points": 2},
+        {"item": "At least 3 themes across both files include mix-and-match notes or combinability guidance (how to combine with other categories)", "points": 2},
+        {"item": "Color schemas in both files use specific HSL numbers (e.g., '25 80% 55%') — not vague descriptions like 'warm tones'", "points": 2}
+      ]
     },
     "D13": {
       "name": "Tone/Mood Diversity",
       "weight": 7,
-      "target_files": [
-        "references/inspiration-mood.md",
-        "references/inspiration-guide.md"
-      ],
-      "eval_prompt": "Read {skill_path}/references/inspiration-mood.md. Score 0-10: How many DISTINCT emotional tones are represented? (not variations of the same mood). Score: 0-3=2, 4-6=4, 7-10=6, 11-15=8, 16+=10. Tones must be emotionally distinct (serene vs calm = same, serene vs chaotic = different)."
+      "target_files": ["references/inspiration-mood.md"],
+      "eval_prompt": "Read {skill_path}/references/inspiration-mood.md. List every named mood/tone/atmosphere theme. Group synonyms into emotional archetypes: (serene/calm/peaceful = 1), (energetic/dynamic/vibrant = 1), (mysterious/enigmatic = 1), (playful/whimsical/fun = 1), (dark/brooding/moody = 1), (luxurious/opulent = 1), (nostalgic/vintage = 1), (chaotic/raw/punk = 1), etc.\n\nCount unique archetypes represented.\n\nScore STRICTLY: 0-3 = 2. 4-6 = 4. 7-9 = 6. 10-12 = 8. 13+ = 10."
     },
     "D14": {
       "name": "Ingredient Combinability",
       "weight": 8,
-      "target_files": [
-        "references/inspiration-guide.md"
-      ],
-      "eval_prompt": "Read {skill_path}/references/inspiration-guide.md. Score 0-10: Is there a combinability system? Check: (1) Compatibility matrix exists, (2) Cross-category mixing examples, (3) 10+ concrete mix recipes, (4) Intensity dial (whisper\u2192full canvas), (5) Random tone generator. 2 points each."
+      "target_files": ["references/inspiration-guide.md"],
+      "checklist": [
+        {"item": "inspiration-guide.md contains a compatibility matrix or section (a table or structured list showing which theme categories pair well)", "points": 2},
+        {"item": "inspiration-guide.md has at least 5 concrete cross-category mixing examples (combining ingredients from 2+ different inspiration files with specific CSS/visual results)", "points": 2},
+        {"item": "inspiration-guide.md has an intensity dial or spectrum system (e.g., whisper/medium/bold or subtle/moderate/full-canvas) with application guidance", "points": 2},
+        {"item": "inspiration-guide.md has at least 10 named mix recipes or combination examples (each with recipe name and ingredient list from multiple categories)", "points": 2},
+        {"item": "inspiration-guide.md has a random tone generator or serendipity mechanism encouraging unexpected combinations", "points": 2}
+      ]
     },
     "D15": {
       "name": "Anti-Slop Originality",
       "weight": 9,
-      "target_files": [
-        "SKILL.md",
-        "references/inspiration-guide.md"
-      ],
-      "eval_prompt": "Read {skill_path}/SKILL.md and references/inspiration-guide.md. Score 0-10: Does the skill FORCE unique visual identity per project? Check: (1) Anti-slop manifesto exists, (2) 'Premium dark SaaS' explicitly called out as default, (3) Every project gets inspiration-driven direction not template, (4) Canvas metaphor in workflow, (5) Random tone surprises user with unexpected combos. 2 points each."
+      "target_files": ["SKILL.md", "references/inspiration-guide.md"],
+      "checklist": [
+        {"item": "SKILL.md or inspiration-guide.md contains an anti-slop or anti-generic named section (words 'slop', 'generic', 'cliche', 'default trap', or 'unique identity' appear in a section heading or mandate)", "points": 2},
+        {"item": "The text explicitly calls out 'premium dark SaaS' or 'dark gradient landing page' as a lazy default to avoid (the phrase 'premium dark' or 'dark SaaS' appears in cautionary context)", "points": 2},
+        {"item": "SKILL.md Phase 1 drives through inspiration-based direction before committing — presents aesthetic bundles or tone galleries, not just 'pick light or dark'", "points": 2},
+        {"item": "SKILL.md uses exploratory/creative language in workflow phases (at least 3 of: 'explore', 'canvas', 'palette', 'discover', 'surprise', 'morph' appear — not just menu language like 'select', 'choose from list')", "points": 2},
+        {"item": "inspiration-guide.md or SKILL.md includes a mechanism for random or unexpected combinations pushing users beyond comfort zone (words 'random', 'surprise', 'wild card', or 'serendipity' in a feature description)", "points": 2}
+      ]
     },
     "D17": {
       "name": "Cultural/Artistic Range",
       "weight": 7,
-      "target_files": [
-        "references/inspiration-nature.md",
-        "references/inspiration-urban.md",
-        "references/inspiration-material.md",
-        "references/inspiration-era.md",
-        "references/inspiration-art.md",
-        "references/inspiration-cinema.md",
-        "references/inspiration-mood.md"
-      ],
-      "eval_prompt": "List all inspiration-*.md files in {skill_path}/references/. For each file, check if it has 3+ themes with ingredient tables. Categories to find: Nature (inspiration-nature.md), Urban (inspiration-urban.md), Material (inspiration-material.md), Era (inspiration-era.md), Art Movement (inspiration-art.md), Cinema (inspiration-cinema.md), Mood (inspiration-mood.md). Score = number of categories with 3+ themes: 1=1, 2=3, 3=4, 4=6, 5=7, 6=9, 7=10. Files with fewer than 10 lines are empty placeholders and don't count."
+      "target_files": ["references/inspiration-nature.md", "references/inspiration-urban.md", "references/inspiration-material.md", "references/inspiration-era.md", "references/inspiration-art.md", "references/inspiration-cinema.md", "references/inspiration-mood.md"],
+      "checklist": [
+        {"item": "inspiration-nature.md has 3+ themes with ingredient tables (markdown table with 3+ data rows per theme)", "points": 1},
+        {"item": "inspiration-urban.md has 3+ themes with ingredient tables", "points": 1},
+        {"item": "inspiration-material.md has 3+ themes with ingredient tables", "points": 2},
+        {"item": "inspiration-era.md has 3+ themes with ingredient tables", "points": 2},
+        {"item": "inspiration-art.md has 3+ themes with ingredient tables", "points": 1},
+        {"item": "inspiration-cinema.md has 3+ themes with ingredient tables", "points": 1},
+        {"item": "inspiration-mood.md has 3+ themes with ingredient tables", "points": 2}
+      ]
     },
     "D19": {
       "name": "Guide vs Rule Ratio",
       "weight": 6,
-      "target_files": [
-        "references/inspiration-guide.md"
-      ],
-      "eval_prompt": "Read {skill_path}/references/inspiration-guide.md. Score 0-10: Are themes presented as LOOSE inspiration (guide) or STRICT rules? Score 10 = purely inspirational with 'NOT a locked theme' callouts, mood boards, sensory descriptions. Score 0 = rigid CSS blocks that must be copy-pasted exactly. Check for words like 'must', 'always', 'never' vs 'consider', 'explore', 'try'."
+      "target_files": ["references/inspiration-guide.md"],
+      "eval_prompt": "Read {skill_path}/references/inspiration-guide.md. Count rigid words (R): 'must', 'always', 'never', 'required', 'shall'. Count guiding words (G): 'consider', 'explore', 'try', 'experiment', 'might', 'could', 'suggest', 'inspiration', 'starting point'.\n\nRatio = G / (R + G). If R = 0, ratio = 1.0.\n\nBase score: Ratio 0.8+ = 8pts. 0.6-0.79 = 6pts. 0.4-0.59 = 4pts. Under 0.4 = 2pts.\n\nBonus +2pts if file contains explicit flexibility callout ('not a locked theme', 'starting point', 'feel free to adapt', or 'loose inspiration').\n\nCap at 10."
     },
     "D20": {
       "name": "Canvas Metaphor Fidelity",
       "weight": 7,
-      "target_files": [
-        "SKILL.md"
-      ],
-      "eval_prompt": "Read {skill_path}/SKILL.md. Score 0-10: Does the skill workflow behave like an artist exploring ideas? Check: (1) Explores multiple directions before committing, (2) Presents unexpected/surprising visual directions, (3) Morphs ideas (combines themes), (4) Uses sensory language, (5) Avoids menu-picking feel. 2 points each."
+      "target_files": ["SKILL.md"],
+      "eval_prompt": "Read {skill_path}/SKILL.md. Score 0-10:\n\n(1) EXPLORATION (0-2): Phase 1 presents aesthetic BUNDLES with evocative names (e.g., 'Midnight Glass', 'Neon Edge') not flat option lists? Named bundles with descriptions = 2pts. Flat lists = 0pts.\n\n(2) SURPRISE (0-2): At least 3 aesthetically DIVERSE bundles offered simultaneously (dark+light+colorful, not 3 dark variations)? Diverse = 2pts. Similar = 0pts.\n\n(3) SENSORY LANGUAGE (0-2): Count sensory/emotional adjectives in Phase 1 and Phase 4 descriptions ('warm', 'crisp', 'electric', 'liquid', 'organic'). 5+ = 2pts. 2-4 = 1pt. 0-1 = 0pts.\n\n(4) MORPHING (0-2): Skill describes combining or morphing ideas from different themes (e.g., 'mix ingredients from nature + urban')? Present = 2pts. Absent = 0pts.\n\n(5) ROLLBACK (0-2): User can revisit earlier choices after seeing later options? Explicit rollback mechanism = 2pts. Implied = 1pt. Absent = 0pts.\n\nSum. Max 10."
     },
     "D21": {
       "name": "Color Palette Curation & Selection",
       "weight": 10,
-      "target_files": [
-        "SKILL.md",
-        "references/design-presets.md",
-        "references/color-palettes.md"
-      ],
-      "eval_prompt": "Read {skill_path}/SKILL.md and references/design-presets.md. Check if references/color-palettes.md exists. Score 0-10: Does the skill provide curated color tone galleries that users can browse and select? Checklist: (1) 15+ named color tone palettes exist (warm earth, cool ocean, jewel, pastel, monochrome, neon, sunset, industrial, etc) \u2014 2pts, (2) Each palette has full HSL CSS variable blocks (bg, fg, primary, accent, muted, border) \u2014 2pts, (3) SKILL.md Phase 1 or 3 asks user to choose a color TONE/MOOD not just light/dark \u2014 2pts, (4) Palettes include emotional/sensory descriptions not just color names \u2014 2pts, (5) Multiple intensity variants per tone (whisper/medium/bold) \u2014 2pts. Score 0 = only static light/dark presets with no selection."
+      "target_files": ["SKILL.md", "references/color-palettes.md"],
+      "checklist": [
+        {"item": "color-palettes.md exists and contains at least 12 distinctly named color tone palettes (count distinct heading-level names like 'Warm Earth', 'Cool Ocean', 'Jewel', 'Pastel', etc.)", "points": 2},
+        {"item": "At least 8 palettes have FULL CSS variable blocks with HSL values for: background, foreground, primary, accent, muted, border (all 6 variables present per palette)", "points": 2},
+        {"item": "SKILL.md Phase 1 or Phase 3 explicitly asks the user to choose a color TONE or MOOD (words 'tone', 'palette', or 'color mood' in a user-facing question)", "points": 2},
+        {"item": "At least 8 palettes in color-palettes.md include emotional or sensory descriptions (e.g., 'earthy warmth', 'ocean depth' — not just color names)", "points": 2},
+        {"item": "color-palettes.md provides intensity variants: words 'whisper' AND 'bold' (or 'light' AND 'saturated') appear as variant labels, with at least 5 tones having 2+ intensity variants", "points": 2}
+      ]
     },
     "D22": {
       "name": "Layout Anti-Generic Hero & Sections",
       "weight": 10,
-      "target_files": [
-        "SKILL.md",
-        "references/section-patterns.md"
-      ],
-      "eval_prompt": "Read {skill_path}/SKILL.md and references/section-patterns.md. Score 0-10: Does the skill PREVENT generic layouts? Checklist: (1) Hero section patterns do NOT default to two-column text+image side-by-side \u2014 explicitly banned with alternatives listed \u2014 2pts, (2) Image/visual placeholders are NOT basic rounded squares \u2014 clip-path, organic shapes, masked, or irregular containers required \u2014 2pts, (3) At least 5 hero layout patterns that are genuinely unconventional (full-screen typography, cinematic zoom, environment-first, single-element, editorial collage) \u2014 2pts, (4) Section patterns include spatial relationships between elements (overlap percentages, rotation degrees, z-index stacking, blend modes) not just grid columns \u2014 2pts, (5) Anti-pattern list explicitly bans 'two-column hero with text left image right' and 'rounded-square image placeholder' \u2014 2pts."
+      "target_files": ["SKILL.md", "references/section-patterns.md", "references/anti-patterns.md"],
+      "checklist": [
+        {"item": "SKILL.md or anti-patterns.md explicitly bans the default two-column hero (phrase 'two-column' or 'text left image right' or 'side-by-side hero' appears in a prohibition)", "points": 2},
+        {"item": "section-patterns.md contains at least 5 NAMED hero layout alternatives that are genuinely unconventional (distinct names — not column-count variations)", "points": 2},
+        {"item": "SKILL.md or anti-patterns.md explicitly bans basic rectangular/rounded-square image containers (with alternatives like clip-path, organic shapes, or masked containers listed)", "points": 2},
+        {"item": "section-patterns.md uses specific spatial CSS properties (at least 3 of: overlap percentages, rotation degrees, z-index values, blend modes, negative margins appear across patterns)", "points": 2},
+        {"item": "anti-patterns.md contains explicit ban text for BOTH a generic hero pattern AND a generic image container pattern", "points": 2}
+      ]
     },
     "D23": {
       "name": "Typography Single-Family Heuristics",
       "weight": 10,
-      "target_files": [
-        "SKILL.md",
-        "references/design-presets.md",
-        "references/typography-heuristics.md"
-      ],
-      "eval_prompt": "Read {skill_path}/SKILL.md and references/design-presets.md. Check if references/typography-heuristics.md exists. Score 0-10: Does the skill enforce professional typography rules? Checklist: (1) Single font family rule \u2014 skill instructs to use ONE font family (different weights for hierarchy, not mixing serif+sans) \u2014 2pts, (2) Header letter-spacing specified as -2% to -3% (tracking-tight or tighter) \u2014 2pts, (3) Header line-height specified as 110-120% (leading-tight or leading-none) \u2014 2pts, (4) Maximum 6 font sizes rule for web/landing pages \u2014 2pts, (5) Font pairing table uses single-family options with weight distribution (e.g. Inter 700 headings + Inter 400 body) not serif+sans combos \u2014 2pts. Score 0 = freely mixes serif headings with sans body, no spacing rules."
+      "target_files": ["SKILL.md", "references/typography-heuristics.md", "references/design-presets.md"],
+      "checklist": [
+        {"item": "SKILL.md Phase 3 states a single font family rule — text says to default to ONE typeface with weight contrast (words 'single family', 'one typeface', or 'weight contrast' appear)", "points": 2},
+        {"item": "typography-heuristics.md exists and specifies heading letter-spacing as negative: tracking-tight or tighter (-0.025em or -2% to -3% range mentioned)", "points": 2},
+        {"item": "typography-heuristics.md specifies heading line-height as 110-120% (values 'leading-[1.1]' or 'leading-[1.2]' or '110%' or '120%' appear)", "points": 2},
+        {"item": "typography-heuristics.md or SKILL.md states a maximum font size count (the number '6' or word 'six' appears in context of max font sizes or type scale limit)", "points": 2},
+        {"item": "design-presets.md includes at least 3 single-family font pairing entries where heading and body use the SAME font family with different weights (e.g., 'Inter 800' + 'Inter 400')", "points": 2}
+      ]
     },
     "D24": {
       "name": "Animation Storytelling Narrative",
       "weight": 10,
-      "target_files": [
-        "SKILL.md",
-        "references/effects-catalog.md",
-        "references/animation-storytelling.md"
-      ],
-      "eval_prompt": "Read {skill_path}/SKILL.md and references/effects-catalog.md. Check if references/animation-storytelling.md exists. Score 0-10: Does the skill require a NARRATIVE animation arc across the entire page scroll, not just per-element animations? Checklist: (1) Concept of 'animation narrative' or 'scroll journey' exists \u2014 the page tells a story through animation progression \u2014 2pts, (2) At least 3 named narrative arc templates with full descriptions (e.g. 'Emergence: void\u2192light\u2192reveal', 'Awakening: still\u2192alive\u2192energy') \u2014 2pts, (3) Animations described cinematically with environmental context (e.g. 'desk light turns on, warm light fills environment, text reveals through light') not just 'fade-in opacity 0\u21921' \u2014 2pts, (4) Sound design or audio atmosphere suggestions included alongside visual animations \u2014 2pts, (5) Complex animation sequences that chain multiple properties across scroll progress (scale+blur+opacity+color simultaneously over scroll ranges) \u2014 2pts. Score 0 = only per-element fade-in/slide-up animations."
+      "target_files": ["SKILL.md", "references/animation-storytelling.md"],
+      "checklist": [
+        {"item": "animation-storytelling.md exists with at least 100 lines and contains concept of 'animation narrative' or 'scroll journey' or 'narrative arc' (page tells a story through animation, not just per-element effects)", "points": 2},
+        {"item": "animation-storytelling.md contains at least 3 NAMED narrative arc templates (e.g., 'Emergence', 'Awakening', 'Descent') each with opening/midpoint/conclusion structure", "points": 2},
+        {"item": "At least 2 arcs describe animations cinematically with environmental context (words like 'light fills', 'environment builds', 'atmosphere shifts' — not just 'opacity 0 to 1')", "points": 2},
+        {"item": "animation-storytelling.md describes chaining 4+ simultaneous properties over scroll ranges ('useTransform' or 'scroll' alongside 4+ CSS properties: scale, blur, opacity, saturation, color in one sequence)", "points": 2},
+        {"item": "animation-storytelling.md includes audio atmosphere or sound suggestions tied to scroll (word 'audio' or 'sound' or 'ambient' in scroll-linked context)", "points": 2}
+      ]
     },
     "D25": {
       "name": "Section Flow Continuity & Storytelling",
       "weight": 10,
-      "target_files": [
-        "SKILL.md",
-        "references/section-patterns.md",
-        "references/prompt-template.md"
-      ],
-      "eval_prompt": "Read {skill_path}/SKILL.md, references/section-patterns.md, and references/prompt-template.md. Score 0-10: Does the skill enforce fluid storytelling flow between sections instead of hard divisions? Checklist: (1) Explicit rule against sections being 'clearly divided with different background colors' \u2014 sections must flow into each other \u2014 2pts, (2) Section transition system described with specific techniques (shared gradients, overlapping content, continuous scroll animations, morphing backgrounds) \u2014 2pts, (3) Prompt template includes a 'SECTION FLOW' or 'ANIMATION NARRATIVE' block that describes the entire page as one continuous experience \u2014 2pts, (4) Complex scroll-linked animations between sections (not just fade-in/out but actual element transformations: morphing shapes, color shifts, parallax depth changes) \u2014 2pts, (5) At least 3 example narrative flows showing how sections connect emotionally and visually (e.g. 'user starts with empty screen \u2192 environment builds \u2192 content emerges \u2192 energy peaks \u2192 calm resolution') \u2014 2pts. Score 0 = sections described independently with hard bg color breaks."
+      "target_files": ["SKILL.md", "references/section-patterns.md", "references/prompt-template.md"],
+      "checklist": [
+        {"item": "SKILL.md contains explicit rule against 'hard divisions' or 'different background colors' between sections (words 'hard division', 'no hard', 'continuity', or 'flow into each other' in a rule)", "points": 2},
+        {"item": "section-patterns.md or SKILL.md describes at least 3 specific section transition techniques (e.g., shared gradient, overlapping content, continuous scroll animation, morphing backgrounds, gradient mask — 3+ distinct named techniques)", "points": 2},
+        {"item": "prompt-template.md contains a 'SECTION FLOW' or 'ANIMATION NARRATIVE' or 'SCROLL JOURNEY' labeled block in its output structure", "points": 2},
+        {"item": "section-patterns.md describes inter-section scroll animations involving transformations (not just fade — words 'morph', 'parallax', 'depth', 'color shift', or 'transform' in inter-section context)", "points": 2},
+        {"item": "SKILL.md or section-patterns.md includes at least 2 example narrative flows showing sections connecting as continuous experience (multi-step journey like 'void/environment/content/energy/resolution')", "points": 2}
+      ]
     },
     "D26": {
       "name": "Design Domain Breadth Beyond Nature/Fire",
       "weight": 9,
-      "target_files": [
-        "references/design-domains.md",
-        "references/inspiration-art.md",
-        "references/inspiration-urban.md"
-      ],
-      "eval_prompt": "Check all files in {skill_path}/references/ for design domain coverage. Score 0-10: Does the skill cover these creative domains with BOTH visual ingredients AND animation storytelling? Check for presence of each domain (1pt each, needs ingredients table + color schema + animation narrative starter to count): (1) Cartoon/Illustrated (hand-drawn, bouncy, squash-stretch), (2) Minimalism/Monolithic single-color, (3) Pixel art/Retro 8-bit, (4) Outer Space (star fields, nebula, zero-gravity), (5) Underwater (caustics, bubbles, depth), (6) Steampunk (gears, brass, mechanical), (7) Paper/Stationery (fold, ink bleed, texture), (8) Neon City/Cyberpunk (rain, hologram, glitch), (9) Claymation/3D tactile, (10) Isometric/Blueprint technical. Score 0 = only forest and fire themes exist."
+      "target_files": ["references/design-domains.md", "references/inspiration-art.md", "references/inspiration-urban.md", "references/inspiration-material.md"],
+      "checklist": [
+        {"item": "A 'Cartoon' or 'Illustrated' or 'Hand-drawn' domain exists in any references/ file with ingredients table + color schema", "points": 1},
+        {"item": "A 'Minimalism' or 'Monolithic' or 'Monochrome single-color' domain exists with ingredients table + color schema", "points": 1},
+        {"item": "A 'Pixel art' or 'Retro 8-bit' or 'Retro gaming' domain exists with ingredients table + color schema", "points": 1},
+        {"item": "An 'Outer Space' or 'Cosmic' or 'Nebula' domain exists with ingredients table + color schema", "points": 1},
+        {"item": "An 'Underwater' or 'Ocean depth' or 'Aquatic' domain exists with ingredients table + color schema", "points": 1},
+        {"item": "A 'Steampunk' or 'Mechanical' or 'Clockwork' domain exists with ingredients table + color schema", "points": 1},
+        {"item": "A 'Paper' or 'Stationery' or 'Origami' or 'Ink' domain exists with ingredients table + color schema", "points": 1},
+        {"item": "A 'Neon City' or 'Cyberpunk' or 'Hologram' domain exists with ingredients table + color schema", "points": 1},
+        {"item": "A 'Clay' or 'Claymation' or '3D tactile' domain exists with ingredients table + color schema", "points": 1},
+        {"item": "An 'Isometric' or 'Blueprint' or 'Technical drawing' domain exists with ingredients table + color schema", "points": 1}
+      ]
     },
     "D27": {
       "name": "Context Budget Efficiency",
       "weight": 10,
-      "target_files": [
-        "SKILL.md"
-      ],
-      "eval_prompt": "Read {skill_path}/SKILL.md. Then use Glob to find all files matching {skill_path}/references/*.md and Read the first 5 lines of each to check for summary comments. Score 0-10 STRICTLY: (1) SKILL.md explicitly instructs to load references LAZILY \u2014 per-phase with 'ONLY load this file' language, not a generic table saying 'Load at Phase X'. Must say 'do NOT load other references'. No lazy loading = 0pts, vague table = 1pt, explicit ONLY-load-this per-phase = 2pts. (2) Each reference file starts with a 1-2 line summary comment (e.g., '<!-- Context budget: ~200 lines. Contains: X, Y, Z -->') so the agent can decide relevance WITHOUT reading the whole file. Read the first 3 lines of each .md file in references/. All have summaries = 2pts, some = 1pt, none = 0pts. (3) SKILL.md contains a 'Context Budget' or 'Context Engineering' section warning about the 40-60% context window danger zone and total token load. Present with specific guidance = 2pts, mentioned briefly = 1pt, absent = 0pts. (4) SKILL.md specifies a MAX TOTAL CONTEXT budget (e.g., 'total loaded references must not exceed N lines') and enforces it. Present = 2pts, absent = 0pts. (5) Reference files are designed for SELECTIVE loading \u2014 each is self-contained and doesn't require reading other references to be useful. Read 3 random reference files: all self-contained = 2pts, some cross-reference others = 1pt, tightly coupled = 0pts."
+      "target_files": ["SKILL.md"],
+      "checklist": [
+        {"item": "SKILL.md contains per-phase lazy loading with 'ONLY load' language — a table or per-phase directive specifying which SINGLE file to load at each phase, with 'do NOT load other references' prohibition", "points": 2},
+        {"item": "SKILL.md contains a 'Context Budget' or 'Context Engineering' warning section about context window consumption and total token load", "points": 2},
+        {"item": "SKILL.md contains a File Index table listing each reference file with approximate line count AND content summary (agent can decide relevance without reading)", "points": 2},
+        {"item": "At least 5 reference .md files start within first 5 lines with a brief summary comment (HTML comment or short paragraph) describing contents", "points": 2},
+        {"item": "Reference files are self-contained: spot-check 3 reference files — each understandable without reading other references (no mandatory 'see X.md for required context' dependencies)", "points": 2}
+      ]
     },
     "D28": {
       "name": "Instruction Density & Signal-to-Noise",
       "weight": 9,
-      "target_files": [
-        "SKILL.md"
-      ],
-      "eval_prompt": "Read {skill_path}/SKILL.md completely. Score 0-9 on instruction density and signal-to-noise ratio using these four independent checks:\n\n(A) TOTAL LINE COUNT (0-3 pts): Count the last line number. Under 200 = 3pts. 200-299 = 2pts. 300-399 = 1pt. 400+ = 0pts.\n\n(B) REFERENCE FILE DELEGATION (0-2 pts): Search for a per-phase lazy-load table or explicit 'load ONLY references/X.md' directives inside SKILL.md. A table with 5+ phase-to-file mappings = 2pts. Partial (1-4 mappings or vague guidance) = 1pt. No delegation structure = 0pts.\n\n(C) PITFALL/ANTI-PATTERN SECTION CONCISENESS (0-2 pts): Find any section titled 'Pitfall', 'Avoidance', 'Anti-pattern', or similar. Count its lines (from section header to next ## heading). Under 25 lines = 2pts (well-summarized, bulk in references/). 25-65 lines = 1pt (present but could be trimmed). Over 65 lines = 0pts (belongs in references/ with a brief SKILL.md summary). No such section = 2pts.\n\n(D) PHASE CONCISENESS (0-2 pts): For each named phase section, count instruction lines. Phases 1-5 (curation phases): limit is 35 lines each. The LAST phase (generation/output): limit is 50 lines (orchestration is inherently denser). If ALL phases meet their respective limits = 2pts. If exactly 1 phase exceeds its limit = 1pt. If 2+ phases exceed = 0pts.\n\nSum A+B+C+D. No duplicate-concept penalty \u2014 cross-context repetition (same rule in a phase, a validation check, AND an anti-patterns section) is intentional and should not be penalized. Minimum 0, maximum 9."
+      "target_files": ["SKILL.md"],
+      "eval_prompt": "Read {skill_path}/SKILL.md completely. Score 0-9 using four independent checks:\n\n(A) TOTAL LINE COUNT (0-3 pts): Count last line number. Under 200 = 3pts. 200-299 = 2pts. 300-399 = 1pt. 400+ = 0pts.\n\n(B) REFERENCE DELEGATION (0-2 pts): Per-phase lazy-load table or 'load ONLY references/X.md' directives. 5+ phase-to-file mappings = 2pts. 1-4 or vague = 1pt. None = 0pts.\n\n(C) ANTI-PATTERN SECTION CONCISENESS (0-2 pts): Find 'Pitfall'/'Anti-pattern' section, count lines to next ## heading. Under 25 lines = 2pts. 25-65 = 1pt. Over 65 = 0pts. No such section = 2pts.\n\n(D) PHASE CONCISENESS (0-2 pts): Count lines per phase. Phases 1-5 limit: 35 lines each. Last phase (generation) limit: 50 lines. ALL meet limits = 2pts. Exactly 1 exceeds = 1pt. 2+ exceed = 0pts.\n\nSum A+B+C+D. Cross-context repetition is intentional — do NOT penalize the same rule appearing in multiple sections. Min 0, max 9."
     },
     "D29": {
       "name": "Vertical Slice Checkpoints",
       "weight": 7,
-      "target_files": [
-        "SKILL.md"
-      ],
+      "target_files": ["SKILL.md"],
       "eval_prompt": "Read {skill_path}/SKILL.md conversation flow (Phases 1-6). Score 0-10: Does the skill enforce VERTICAL SLICES with human verification checkpoints between phases? STRICT scoring: (1) Each phase ends with explicit human confirmation before proceeding \u2014 not just 'Proceed to Phase N' but 'Wait for user to confirm/adjust before moving on'. All 6 phases have this = 2pts, most = 1pt, few/none = 0pts. (2) Phase 6 (generation) has intermediate checkpoints \u2014 does it generate the ENTIRE prompt in one shot, or does it build incrementally (e.g., generate design system first \u2192 confirm \u2192 generate sections \u2192 confirm)? Single-shot generation = 0pts, 2+ checkpoints in generation = 2pts. (3) Rollback mechanism \u2014 can the user say 'redo Phase 3' without losing Phase 1-2 work? Explicit = 2pts, implicit = 1pt, missing = 0pts. (4) Each phase produces a VISIBLE artifact the user can review (not just internal state) \u2014 2pts if all phases show their output, 0pts if phases silently accumulate. (5) Error recovery \u2014 what happens if user gives contradictory inputs across phases? Addressed = 2pts, not addressed = 0pts."
     },
     "D30": {
       "name": "Reference Compression Ratio",
       "weight": 8,
-      "target_files": [
-        "references/section-patterns.md",
-        "references/effects-catalog.md",
-        "references/design-presets.md"
-      ],
+      "target_files": ["references/section-patterns.md", "references/effects-catalog.md", "references/design-presets.md"],
       "eval_prompt": "Read these 3 specific files completely: {skill_path}/references/section-patterns.md, {skill_path}/references/effects-catalog.md, {skill_path}/references/design-presets.md. Score 0-10 on information DENSITY \u2014 penalize bloat: (1) Format: Are entries structured as scannable tables or compact lists (name | CSS values | usage context) rather than multi-paragraph prose descriptions? Read 5 entries from each file. Tables/lists = 2pts, mixed = 1pt, mostly paragraphs = 0pts. (2) Redundancy: In each file, search for repeated CSS patterns (e.g., same gradient, same shadow, same animation). Use Grep for common patterns like 'linear-gradient', 'box-shadow', 'backdrop-blur'. Any value appearing in 3+ separate entries = redundant. 0 redundancies = 2pts, 1-3 = 1pt, 4+ = 0pts. (3) Actionability: Sample 5 entries per file \u2014 does each provide CONCRETE CSS/Tailwind classes ready to copy, or abstract advice like 'use warm tones'? All concrete = 2pts, mixed = 1pt, mostly abstract = 0pts. (4) Entry compactness: Count lines per entry/theme/pattern in each file. Average over 20 lines per entry = 0pts, 10-20 = 1pt, under 10 = 2pts. (5) Self-contained: Can each entry be understood without reading surrounding entries? Spot-check 3 entries per file. All standalone = 2pts, some depend on context = 1pt, requires reading whole file = 0pts."
     },
     "D31": {
       "name": "Deterministic Research-Generation Separation",
       "weight": 8,
-      "target_files": [
-        "SKILL.md"
-      ],
+      "target_files": ["SKILL.md"],
       "eval_prompt": "Read {skill_path}/SKILL.md. Score 0-10: Does the skill SEPARATE research/curation (reading references, browsing options) from generation (writing the final prompt)? This is critical for preventing hallucination. STRICT: (1) Phases 1-5 are clearly RESEARCH/CURATION phases \u2014 they gather, curate, and confirm choices. Phase 6 is GENERATION \u2014 it assembles the confirmed choices into output. Is this separation explicit? Clear = 2pts, implied = 1pt, blurred = 0pts. (2) Does the skill instruct the agent to NOT generate CSS/code during curation phases? (Prevents premature commitment to hallucinated values). Explicit prohibition = 2pts, silent = 0pts. (3) Generation phase (6) references ONLY confirmed user choices from prior phases \u2014 not re-reading references or making new creative decisions. Explicit constraint = 2pts, not mentioned = 0pts. (4) Are aesthetic suggestions in early phases presented as OPTIONS (multiple choices) rather than single recommendations? Forces exploration over premature lock-in. Multiple options required = 2pts, single suggestions = 0pts. (5) Does the skill warn against the agent 'filling in gaps' with its own opinions during generation? Gaps should trigger a follow-up question, not a guess. Warning present = 2pts, absent = 0pts."
     },
     "D32": {
       "name": "Multi-Agent Tree Generation Architecture",
       "weight": 10,
-      "target_files": [
-        "SKILL.md"
-      ],
+      "target_files": ["SKILL.md"],
       "eval_prompt": "Read {skill_path}/SKILL.md, focusing on Phase 6 (generation) and the overall architecture. Score 0-10: Does the skill mandate MULTI-AGENT, MULTI-TURN generation instead of single-shot monolithic output? This is the #1 quality lever \u2014 a single agent generating 500+ lines of design prompt in one turn WILL produce slop. STRICT scoring: (1) Phase 6 explicitly instructs spawning SUB-AGENTS (via Agent tool or claude CLI) for different generation tasks \u2014 e.g., one agent for design system CSS, another for section layouts, another for animation narrative. Must use words like 'spawn', 'sub-agent', 'delegate', 'Agent tool', or 'parallel agents'. Explicit multi-agent = 3pts, single-agent hinted = 1pt, not mentioned = 0pts. (2) Generation is LAYERED/RECURSIVE \u2014 a coordinator agent assembles outputs from specialist agents, not one agent doing everything sequentially. Tree-expanding pattern described = 2pts, flat sequential = 0pts. (3) Each sub-agent gets MINIMAL context \u2014 only the confirmed choices relevant to its task + its specific reference file. Context scoping per agent = 2pts, all context to all agents = 0pts. (4) Sub-agent outputs are VALIDATED before assembly \u2014 coordinator checks for anti-patterns, consistency, conflicts between sub-agent outputs. Validation step = 2pts, blind assembly = 0pts. (5) Final assembly includes a REVIEW pass \u2014 after combining all sub-agent outputs, a fresh agent (or the coordinator) reviews the complete prompt for coherence and anti-pattern violations. Review pass = 1pt, no review = 0pts. Score 0 = single agent generates entire prompt in one turn. This criterion CANNOT score above 2 if multi-agent generation is not explicitly required."
     }
   }
