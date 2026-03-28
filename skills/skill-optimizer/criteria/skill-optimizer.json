@@ -5,82 +5,198 @@
     "R1": {
       "name": "Crash-Resilient Main Loop",
       "weight": 10,
-      "target_files": ["scripts/improver/loop.py"],
+      "target_files": [
+        "scripts/improver/loop.py"
+      ],
       "checklist": [
-        {"item": "run_loop() wraps the run_cycle() call in a try-except that catches Exception", "points": 2},
-        {"item": "On exception in run_cycle(), save_state() is called before continuing to next cycle", "points": 2},
-        {"item": "On exception in run_cycle(), record_failure() is called for the last_target criterion", "points": 2},
-        {"item": "On exception in run_cycle(), git checkout is run to revert uncommitted working tree changes", "points": 2},
-        {"item": "On exception in run_cycle(), the traceback is printed to stdout for diagnosis", "points": 1},
-        {"item": "After handling the exception, the loop continues to the next cycle (not break or re-raise)", "points": 1}
+        {
+          "item": "run_loop() wraps the run_cycle() call in a try-except that catches Exception",
+          "points": 2
+        },
+        {
+          "item": "On exception in run_cycle(), save_state() is called before continuing to next cycle",
+          "points": 2
+        },
+        {
+          "item": "On exception in run_cycle(), record_failure() is called for the last_target criterion",
+          "points": 2
+        },
+        {
+          "item": "On exception in run_cycle(), git checkout is run to revert uncommitted working tree changes",
+          "points": 2
+        },
+        {
+          "item": "On exception in run_cycle(), the traceback is printed to stdout for diagnosis",
+          "points": 1
+        },
+        {
+          "item": "After handling the exception, the loop continues to the next cycle (not break or re-raise)",
+          "points": 1
+        }
       ]
     },
     "R2": {
       "name": "Atomic State Persistence",
       "weight": 9,
-      "target_files": ["scripts/improver/state.py"],
+      "target_files": [
+        "scripts/improver/state.py"
+      ],
       "checklist": [
-        {"item": "save_state() writes to a temporary file first (e.g., .tmp suffix), not directly to the final path", "points": 3},
-        {"item": "save_state() renames/moves the temp file to the final path after successful write (atomic on POSIX)", "points": 3},
-        {"item": "save_state() validates the JSON content (e.g., json.loads round-trip) before committing the write", "points": 2},
-        {"item": "save_state() cleans up the temp file in a finally/except block if the write fails", "points": 2}
+        {
+          "item": "save_state() writes to a temporary file first (e.g., .tmp suffix), not directly to the final path",
+          "points": 3
+        },
+        {
+          "item": "save_state() renames/moves the temp file to the final path after successful write (atomic on POSIX)",
+          "points": 3
+        },
+        {
+          "item": "save_state() validates the JSON content (e.g., json.loads round-trip) before committing the write",
+          "points": 2
+        },
+        {
+          "item": "save_state() cleans up the temp file in a finally/except block if the write fails",
+          "points": 2
+        }
       ]
     },
     "R3": {
       "name": "Agent Call Retry with Backoff",
       "weight": 9,
-      "target_files": ["scripts/improver/runner.py"],
+      "target_files": [
+        "scripts/improver/runner.py"
+      ],
       "checklist": [
-        {"item": "run_claude() retries on [TIMEOUT] at least once before returning the timeout sentinel", "points": 2},
-        {"item": "run_claude() retries on transient subprocess errors (rate limit, overloaded, 529, 503) at least once", "points": 2},
-        {"item": "Retry delay increases between attempts (backoff) — not a fixed sleep", "points": 2},
-        {"item": "Max retry count is configurable via parameter with a default value", "points": 2},
-        {"item": "Each retry attempt prints a log line with attempt number and wait duration", "points": 2}
+        {
+          "item": "run_claude() retries on [TIMEOUT] at least once before returning the timeout sentinel",
+          "points": 2
+        },
+        {
+          "item": "run_claude() retries on transient subprocess errors (rate limit, overloaded, 529, 503) at least once",
+          "points": 2
+        },
+        {
+          "item": "Retry delay increases between attempts (backoff) \u2014 not a fixed sleep",
+          "points": 2
+        },
+        {
+          "item": "Max retry count is configurable via parameter with a default value",
+          "points": 2
+        },
+        {
+          "item": "Each retry attempt prints a log line with attempt number and wait duration",
+          "points": 2
+        }
       ]
     },
     "R4": {
       "name": "Git Operation Safety",
       "weight": 8,
-      "target_files": ["scripts/improver/loop.py"],
+      "target_files": [
+        "scripts/improver/loop.py"
+      ],
       "checklist": [
-        {"item": "After git add in the commit path, the return code is checked and a warning is printed if non-zero", "points": 2},
-        {"item": "After git commit in the commit path, the return code is checked and a warning is printed if non-zero (excluding 'nothing to commit')", "points": 3},
-        {"item": "The git checkout revert operations (on regression/no-improvement) use capture_output=True so they don't print raw git output", "points": 2},
-        {"item": "The crash handler in run_loop also runs git checkout to revert uncommitted changes", "points": 3}
+        {
+          "item": "After git add in the commit path, the return code is checked and a warning is printed if non-zero",
+          "points": 2
+        },
+        {
+          "item": "After git commit in the commit path, the return code is checked and a warning is printed if non-zero (excluding 'nothing to commit')",
+          "points": 3
+        },
+        {
+          "item": "The git checkout revert operations (on regression/no-improvement) use capture_output=True so they don't print raw git output",
+          "points": 2
+        },
+        {
+          "item": "The crash handler in run_loop also runs git checkout to revert uncommitted changes",
+          "points": 3
+        }
       ]
     },
     "R5": {
       "name": "Signal-Aware Graceful Shutdown",
       "weight": 8,
-      "target_files": ["scripts/improver/cli.py"],
+      "target_files": [
+        "scripts/improver/cli.py"
+      ],
       "checklist": [
-        {"item": "SIGINT handler is registered via signal.signal() before run_loop is called", "points": 2},
-        {"item": "SIGTERM handler is registered via signal.signal() before run_loop is called", "points": 2},
-        {"item": "The signal handler calls request_stop() to signal the loop to halt after the current cycle", "points": 3},
-        {"item": "A second signal (double Ctrl+C) forces immediate exit via sys.exit", "points": 3}
+        {
+          "item": "SIGINT handler is registered via signal.signal() before run_loop is called",
+          "points": 2
+        },
+        {
+          "item": "SIGTERM handler is registered via signal.signal() before run_loop is called",
+          "points": 2
+        },
+        {
+          "item": "The signal handler calls request_stop() to signal the loop to halt after the current cycle",
+          "points": 3
+        },
+        {
+          "item": "A second signal (double Ctrl+C) forces immediate exit via sys.exit",
+          "points": 3
+        }
       ]
     },
     "R6": {
       "name": "Evaluation Failure Recovery",
       "weight": 9,
-      "target_files": ["scripts/improver/evaluation.py"],
+      "target_files": [
+        "scripts/improver/evaluation.py"
+      ],
       "checklist": [
-        {"item": "In evaluate_all(), when a ThreadPoolExecutor future raises an exception, the previous score is used as fallback (not hardcoded 0)", "points": 3},
-        {"item": "The fallback path logs the error with the criterion ID so failures are traceable", "points": 2},
-        {"item": "The fallback result sets confidence to 'low' to signal unreliable data", "points": 2},
-        {"item": "evaluate_criterion() has a fallback_score parameter that defaults to the previous score when parse fails", "points": 3}
+        {
+          "item": "In evaluate_all(), when a ThreadPoolExecutor future raises an exception, the previous score is used as fallback (not hardcoded 0)",
+          "points": 3
+        },
+        {
+          "item": "The fallback path logs the error with the criterion ID so failures are traceable",
+          "points": 2
+        },
+        {
+          "item": "The fallback result sets confidence to 'low' to signal unreliable data",
+          "points": 2
+        },
+        {
+          "item": "evaluate_criterion() has a fallback_score parameter that defaults to the previous score when parse fails",
+          "points": 3
+        }
       ]
     },
     "C9": {
       "name": "Eval Prompt Minimal-Context Discipline",
       "weight": 8,
-      "target_files": ["scripts/improver/evaluation.py", "scripts/improver/agents.py"],
+      "target_files": [
+        "scripts/improver/evaluation.py",
+        "scripts/improver/agents.py"
+      ],
       "checklist": [
-        {"item": "evaluate_criterion() prompt does NOT include the full skill description or skill purpose — only the criterion-specific rubric and target file paths", "points": 3},
-        {"item": "research_criterion() prompt does NOT include the criterion name, score, or eval_prompt — it describes files objectively without knowing the improvement goal", "points": 3},
-        {"item": "improve_criterion() prompt does NOT include raw scoring language (0-10 scale, score X) — only reframed directives of what must be present", "points": 2},
-        {"item": "discover_criteria() prompt provides only existing criteria names and scores (not full eval_prompts) to avoid context bloat", "points": 2}
+        {
+          "item": "evaluate_criterion() prompt does NOT include the full skill description or skill purpose \u2014 only the criterion-specific rubric and target file paths",
+          "points": 3
+        },
+        {
+          "item": "research_criterion() prompt does NOT include the criterion name, score, or eval_prompt \u2014 it describes files objectively without knowing the improvement goal",
+          "points": 3
+        },
+        {
+          "item": "improve_criterion() prompt does NOT include raw scoring language (0-10 scale, score X) \u2014 only reframed directives of what must be present",
+          "points": 2
+        },
+        {
+          "item": "discover_criteria() prompt provides only existing criteria names and scores (not full eval_prompts) to avoid context bloat",
+          "points": 2
+        }
       ]
+    },
+    "R10": {
+      "name": "Criteria File Write Atomicity",
+      "weight": 8,
+      "target_files": [
+        "scripts/improver/agents.py"
+      ],
+      "eval_prompt": "Read {skill_path}/scripts/improver/agents.py. Score 0-10 based on atomic write safety for criteria file updates:\n- [3pts] refine_criterion() writes to criteria_path via a temp file + atomic rename (not direct open(path, 'w') + json.dump)\n- [3pts] apply_discovered_criteria() writes criteria updates via a temp file + atomic rename or validates full JSON round-trip before writing\n- [2pts] At least one write path in agents.py catches exceptions (try-except around the file write) to prevent a partial/corrupt criteria file from being left on disk\n- [2pts] The criteria file is re-read from disk before being mutated in both refine_criterion() and apply_discovered_criteria() (not modified only in-memory and then written back)\nScore = total pts earned / 10 * 10. Direct open(path, 'w') + json.dump without a temp-file pattern scores 0pts for items 1 and 2. Note: state.py's save_state() (R2) is explicitly excluded \u2014 this criterion covers only the criteria file writes in agents.py."
     }
   }
 }

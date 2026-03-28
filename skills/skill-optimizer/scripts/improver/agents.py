@@ -1,7 +1,9 @@
 """Agent pipelines — research, improve, refine, discover criteria."""
 
 import json
+import os
 import re
+import tempfile
 from pathlib import Path
 
 from .config import CRITERIA_DIR, DATA_DIR, DISCOVER_INTERVAL, runtime
@@ -10,6 +12,21 @@ from .lifecycle import check_criteria_overlap, enforce_active_cap
 from .models import resolve_eval_models, resolve_improve_model
 from .runner import run_claude
 from .state import get_score
+
+
+def _atomic_write_json(path: Path, data: dict) -> None:
+    """Write JSON atomically via temp file + os.replace to prevent partial/corrupt writes."""
+    tmp_fd, tmp_path = tempfile.mkstemp(dir=path.parent, suffix=".tmp")
+    try:
+        with os.fdopen(tmp_fd, "w") as f:
+            json.dump(data, f, indent=2)
+        os.replace(tmp_path, path)
+    except Exception:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
 
 
 def research_criterion(skill_config: dict, criterion_id: str, criterion: dict) -> str:
@@ -314,8 +331,11 @@ Nothing else."""
                         with open(criteria_path) as f:
                             config = json.load(f)
                         config["criteria"][cid]["checklist"] = new_checklist
-                        with open(criteria_path, "w") as f:
-                            json.dump(config, f, indent=2)
+                        try:
+                            _atomic_write_json(criteria_path, config)
+                        except Exception as write_err:
+                            print(f"  [REFINE] Failed to write criteria: {write_err}")
+                            return False
                         skill_config["criteria"][cid]["checklist"] = new_checklist
                         state["failures"][cid] = {"consecutive": 0, "total": 0, "cooldown_until": 0}
                         if cid in state.get("parked", []):
@@ -329,8 +349,11 @@ Nothing else."""
                     with open(criteria_path) as f:
                         config = json.load(f)
                     config["criteria"][cid]["eval_prompt"] = new_prompt
-                    with open(criteria_path, "w") as f:
-                        json.dump(config, f, indent=2)
+                    try:
+                        _atomic_write_json(criteria_path, config)
+                    except Exception as write_err:
+                        print(f"  [REFINE] Failed to write criteria: {write_err}")
+                        return False
                     skill_config["criteria"][cid]["eval_prompt"] = new_prompt
                     state["failures"][cid] = {"consecutive": 0, "total": 0, "cooldown_until": 0}
                     if cid in state.get("parked", []):
@@ -425,6 +448,10 @@ def apply_discovered_criteria(skill_config: dict, state: dict, proposals: list[d
     skill_name = skill_config["skill_name"]
     criteria_path = CRITERIA_DIR / f"{skill_name}.json"
 
+    # Re-read from disk before mutating to capture any concurrent changes
+    with open(criteria_path) as f:
+        config = json.load(f)
+
     added = 0
     for prop in proposals:
         cid = prop["id"]
@@ -434,20 +461,21 @@ def apply_discovered_criteria(skill_config: dict, state: dict, proposals: list[d
         if check_criteria_overlap(skill_config["criteria"], prop):
             print(f"  [DISCOVER] Skipping {cid} — overlaps with existing criterion")
             continue
-        skill_config["criteria"][cid] = {
+        new_entry = {
             "name": prop["name"],
             "weight": prop["weight"],
             "target_files": prop["target_files"],
             "eval_prompt": prop["eval_prompt"]
         }
+        skill_config["criteria"][cid] = new_entry
+        config["criteria"][cid] = new_entry
         added += 1
         print(f"  [DISCOVER] Added {cid}: {prop['name']} (weight={prop['weight']})")
 
-    if added > 0 and state:
-        enforce_active_cap(skill_config, state)
-
-    with open(criteria_path) as f:
-        config = json.load(f)
-    config["criteria"] = skill_config["criteria"]
-    with open(criteria_path, "w") as f:
-        json.dump(config, f, indent=2)
+    if added > 0:
+        if state:
+            enforce_active_cap(skill_config, state)
+        try:
+            _atomic_write_json(criteria_path, config)
+        except Exception as write_err:
+            print(f"  [DISCOVER] Failed to write criteria: {write_err}")
