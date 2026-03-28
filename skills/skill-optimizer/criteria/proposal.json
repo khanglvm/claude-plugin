@@ -1,0 +1,66 @@
+{
+  "skill_name": "proposal",
+  "skill_path": "skills/proposal",
+  "criteria": {
+    "P1": {
+      "name": "Instruction Clarity",
+      "weight": 10,
+      "target_files": ["SKILL.md", "references/workflow-steps.md"],
+      "eval_prompt": "Read {skill_path}/SKILL.md and references/workflow-steps.md. Score 0-10: Could a fresh Claude instance execute this workflow without confusion? Check: (1) No ambiguous terms, (2) No contradictions between SKILL.md and refs, (3) Every step has explicit tool calls listed, (4) Error states have clear resolution paths, (5) Mode differences clearly documented. 2 points each."
+    },
+    "P2": {
+      "name": "Agent Spawn Compliance",
+      "weight": 10,
+      "target_files": ["SKILL.md", "references/subagent-patterns.md"],
+      "eval_prompt": "Read {skill_path}/SKILL.md and references/subagent-patterns.md. Score 0-10: How enforceable are mandatory agent spawns? Check: (1) Exact spawn patterns documented, (2) State file flags for each agent, (3) Audit validates flags, (4) Anti-skip language for steps 4-6, (5) Clear consequence for missing spawns. 2 points each."
+    },
+    "P3": {
+      "name": "Intent Detection Accuracy",
+      "weight": 7,
+      "target_files": ["references/intent-detection.md"],
+      "eval_prompt": "Read {skill_path}/references/intent-detection.md. Score 0-10: Does the detection algorithm handle edge cases? Check: (1) Priority order for conflicting flags, (2) Mixed-signal resolution, (3) Explicit flag overrides heuristics, (4) Fallback to interactive, (5) 5+ test examples documented. 2 points each."
+    },
+    "P4": {
+      "name": "Error Recovery Completeness",
+      "weight": 9,
+      "target_files": ["SKILL.md", "references/state-machine.md"],
+      "eval_prompt": "Read {skill_path}/SKILL.md and references/state-machine.md. Score 0-10: Are failure scenarios handled? Check: (1) Agent timeout/failure procedure, (2) State file corruption recovery, (3) Test failure retry with debugger, (4) Partial completion handling, (5) Git conflict resolution. 2 points each."
+    },
+    "P5": {
+      "name": "Audit Robustness",
+      "weight": 7,
+      "target_files": ["SKILL.md", "references/state-machine.md"],
+      "eval_prompt": "Read the completion audit in {skill_path}/SKILL.md. Score 0-10: Is the bash audit command robust? Check: (1) Path escaping for special chars, (2) Handles missing state file, (3) Validates markdown format, (4) Reports specific failures not just counts, (5) Re-audit loop has max iterations. 2 points each."
+    },
+    "P6": {
+      "name": "Step Continuation Enforcement",
+      "weight": 9,
+      "target_files": ["SKILL.md", "references/workflow-steps.md"],
+      "eval_prompt": "Read {skill_path}/SKILL.md step continuation rules. Score 0-10: Does the skill prevent mid-workflow stalling? Check: (1) Explicit 'IMMEDIATELY proceed' rules, (2) Anti-summary-and-stop language, (3) Auto-mode has zero pause points, (4) Steps 4-6 highlighted as death zones, (5) Checkpoint verification before each step. 2 points each."
+    },
+    "P7": {
+      "name": "Token Efficiency",
+      "weight": 6,
+      "target_files": ["SKILL.md"],
+      "eval_prompt": "Count total lines in {skill_path}/SKILL.md and all references/*.md. Score 0-10: SKILL.md under 200 lines=+3, each ref under 150 lines=+1 (max 5), references loaded on-demand not all-at-once=+2. Deduct 2 if SKILL.md over 300 lines."
+    },
+    "P8": {
+      "name": "Review Scoring Formula",
+      "weight": 6,
+      "target_files": ["references/review-cycle.md"],
+      "eval_prompt": "Read {skill_path}/references/review-cycle.md. Score 0-10: Is the auto-approve scoring formula defined? Check: (1) Score calculation algorithm exists, (2) Critical vs warning classification clear, (3) Threshold justification, (4) Score components weighted, (5) Edge cases documented (e.g., 0 criticals but low score). 2 points each."
+    },
+    "P9": {
+      "name": "Multi-Phase Coordination",
+      "weight": 5,
+      "target_files": ["references/workflow-steps.md"],
+      "eval_prompt": "Read {skill_path}/references/workflow-steps.md. Score 0-10: Does the skill handle multi-phase plans? Check: (1) Cross-phase dependency awareness, (2) Phase failure doesn't corrupt next phase, (3) Rollback procedure between phases, (4) Auto-mode phase sequencing, (5) Parallel-mode phase grouping. 2 points each."
+    },
+    "P10": {
+      "name": "Resume Capability",
+      "weight": 5,
+      "target_files": ["SKILL.md", "references/state-machine.md"],
+      "eval_prompt": "Read {skill_path}/SKILL.md and references/state-machine.md. Score 0-10: Can an interrupted workflow resume? Check: (1) --resume flag documented, (2) State file preserves enough context, (3) Resume detects last completed step, (4) Resume skips completed steps, (5) Resume validates state file integrity. 2 points each."
+    }
+  }
+}

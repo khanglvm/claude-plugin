@@ -5,29 +5,99 @@
     "email": ""
   },
   "metadata": {
-    "description": "Claude Code plugins by khang",
-    "version": "1.0.0"
+    "description": "Claude Code plugins by khang — skills for implementation, design, optimization, and more",
+    "version": "2.0.0"
   },
   "plugins": [
-    {
-      "name": "propose",
-      "source": {
-        "source": "git-subdir",
-        "url": "https://github.com/khanglvm/claude-plugin.git",
-        "path": "propose",
-        "ref": "main"
-      },
-      "description": "Recursive product ideation engine — converts fragment ideas into full, research-backed product proposals through multi-agent expansion."
-    },
     {
       "name": "proposal",
       "source": {
         "source": "git-subdir",
         "url": "https://github.com/khanglvm/claude-plugin.git",
-        "path": "proposal",
+        "path": "skills/proposal",
         "ref": "main"
       },
       "description": "Deterministic feature implementation workflow with state-tracked checkpoints, mandatory agent delegation, and completion audit."
+    },
+    {
+      "name": "design-prompt",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/khanglvm/claude-plugin.git",
+        "path": "skills/design-prompt",
+        "ref": "main"
+      },
+      "description": "Interactive web design prompt builder with 63+ inspiration themes across nature, urban, art, cinema, mood, era, and material categories."
+    },
+    {
+      "name": "skill-optimizer",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/khanglvm/claude-plugin.git",
+        "path": "skills/skill-optimizer",
+        "ref": "main"
+      },
+      "description": "Autoresearch-pattern skill improvement loop. Analyzes any skill, creates criteria interactively, runs evaluate-improve-keep/revert cycles via claude CLI."
+    },
+    {
+      "name": "llm-router",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/khanglvm/claude-plugin.git",
+        "path": "skills/llm-router",
+        "ref": "main"
+      },
+      "description": "Unified LLM gateway for multi-model routing across OpenAI, Anthropic, Gemini, and OpenRouter."
+    },
+    {
+      "name": "plan",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/khanglvm/claude-plugin.git",
+        "path": "skills/plan",
+        "ref": "main"
+      },
+      "description": "Research, analyze, and create comprehensive implementation plans with red-team validation."
+    },
+    {
+      "name": "outline-cli",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/khanglvm/claude-plugin.git",
+        "path": "skills/outline-cli",
+        "ref": "main"
+      },
+      "description": "Search, read, and update company documentation in Outline wiki."
+    },
+    {
+      "name": "jira-mcp",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/khanglvm/claude-plugin.git",
+        "path": "skills/jira-mcp",
+        "ref": "main"
+      },
+      "description": "Jira integration via MCP — search issues, create tickets, manage sprints with JQL."
+    },
+    {
+      "name": "codex-cli",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/khanglvm/claude-plugin.git",
+        "path": "skills/codex-cli",
+        "ref": "main"
+      },
+      "description": "OpenAI Codex CLI integration — auth, providers, config, and operations."
+    },
+    {
+      "name": "fix-codex-skill",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/khanglvm/claude-plugin.git",
+        "path": "skills/fix-codex-skill",
+        "ref": "main"
+      },
+      "description": "Repair malformed Codex CLI skill files — format validation and auto-fix."
     }
   ]
 }

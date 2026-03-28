@@ -1,0 +1,9 @@
+{
+  "name": "fix-codex-skill",
+  "version": "1.0.0",
+  "description": "description: Repair invalid global or project skill formats for Codex compatibility, especially skills installed via `np",
+  "author": { "name": "khang" },
+  "repository": "https://github.com/khanglvm/claude-plugin",
+  "license": "MIT",
+  "skills": "./"
+}

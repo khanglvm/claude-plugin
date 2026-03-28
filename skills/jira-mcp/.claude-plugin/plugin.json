@@ -1,0 +1,9 @@
+{
+  "name": "jira-mcp",
+  "version": "1.0.0",
+  "description": "description: >",
+  "author": { "name": "khang" },
+  "repository": "https://github.com/khanglvm/claude-plugin",
+  "license": "MIT",
+  "skills": "./"
+}

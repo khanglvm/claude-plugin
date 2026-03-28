@@ -1,0 +1,4 @@
+interface:
+  display_name: "Outline CLI"
+  short_description: "Deterministic Outline workflows with safe mutations and broad tool coverage"
+  default_prompt: "Use $outline-cli to run token-efficient Outline workflows: discover with ids/summary first, batch where possible, and enforce performAction/read-token safety for mutating or delete operations."

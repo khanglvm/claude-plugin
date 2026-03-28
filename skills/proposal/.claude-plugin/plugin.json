@@ -1,0 +1,9 @@
+{
+  "name": "proposal",
+  "version": "1.0.0",
+  "description": "Deterministic feature implementation workflow with state-tracked enforcement. Activate before implementing any feature, ",
+  "author": { "name": "khang" },
+  "repository": "https://github.com/khanglvm/claude-plugin",
+  "license": "MIT",
+  "skills": "./"
+}

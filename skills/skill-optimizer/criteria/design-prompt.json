@@ -1,0 +1,90 @@
+{
+  "skill_name": "design-prompt",
+  "skill_path": "skills/design-prompt",
+  "criteria": {
+    "D1": {
+      "name": "Anti-Pattern Avoidance",
+      "weight": 10,
+      "target_files": ["SKILL.md", "references/section-patterns.md"],
+      "eval_prompt": "Read the design-prompt skill at {skill_path}. Score 0-10: Does the skill's instructions and references effectively prevent these AI design cliches? (1) Small badge/tag above headings, (2) Centered badge→heading→subtext→CTA stacks, (3) Uniform grid-cols-3 cards, (4) Floating decorative shapes with bob animation, (5) Basic rectangular containers only. Score 10 = impossible to produce these patterns when following the skill. Score 0 = no anti-pattern guidance."
+    },
+    "D2": {
+      "name": "Implementation Readiness",
+      "weight": 10,
+      "target_files": ["references/prompt-template.md"],
+      "eval_prompt": "Read the design-prompt skill output template at {skill_path}/references/prompt-template.md. Score 0-10: Could a coding agent take this template's output and build a working page WITHOUT follow-up questions? Check: CSS variables complete? Tailwind classes real? Font imports specified? Dependencies listed? Responsive breakpoints defined?"
+    },
+    "D3": {
+      "name": "Output Completeness",
+      "weight": 8,
+      "target_files": ["SKILL.md", "references/prompt-template.md"],
+      "eval_prompt": "Read {skill_path}/SKILL.md and references/prompt-template.md. Score 0-10: Does the output template capture ALL design dimensions? Check presence of: (1) Typography system, (2) Color variables, (3) Spacing system, (4) Effects/animations, (5) Section layouts, (6) Responsive rules, (7) Accessibility notes, (8) Dependencies, (9) Component patterns, (10) Dark/light mode. 1 point each."
+    },
+    "D4": {
+      "name": "CSS/Tailwind Correctness",
+      "weight": 6,
+      "target_files": ["references/design-presets.md", "references/effects-catalog.md"],
+      "eval_prompt": "Read {skill_path}/references/design-presets.md and effects-catalog.md. Score 0-10: Are CSS values valid? Check: HSL format correct? Tailwind classes exist in v3/v4? Google Font names real? Animation keyframes syntactically valid? Custom properties properly declared?"
+    },
+    "D5": {
+      "name": "Conversation Efficiency",
+      "weight": 5,
+      "target_files": ["SKILL.md"],
+      "eval_prompt": "Read {skill_path}/SKILL.md conversation flow. Score 0-10: Can the 6-phase flow complete in 6-8 turns? Are there shortcuts for experienced users? Does Phase 5 (sections) avoid context fatigue with 8-12 sections? Is there a bundled/batch approach?"
+    },
+    "D8": {
+      "name": "Layout Creativity",
+      "weight": 8,
+      "target_files": ["references/section-patterns.md"],
+      "eval_prompt": "Read {skill_path}/references/section-patterns.md. Score 0-10: How many UNIQUE layout compositions exist (not slight variations)? Score: 0-2 layouts=2, 3-5=4, 6-8=6, 9-12=8, 13+=10. Each layout must be genuinely different in spatial arrangement, not just different content."
+    },
+    "D11": {
+      "name": "Inspiration Database Breadth",
+      "weight": 10,
+      "target_files": ["references/inspiration-nature.md", "references/inspiration-urban.md", "references/inspiration-material.md", "references/inspiration-era.md", "references/inspiration-art.md", "references/inspiration-cinema.md", "references/inspiration-mood.md"],
+      "eval_prompt": "Count total atmospheric/immersive themes across all inspiration-*.md files in {skill_path}/references/. Score 0-10: 0-5 themes=1, 6-15=3, 16-30=5, 31-45=7, 46-60=9, 60+=10. Each theme must have ingredients table + color schema to count."
+    },
+    "D12": {
+      "name": "Real-World Visual Translation",
+      "weight": 8,
+      "target_files": ["references/inspiration-nature.md", "references/inspiration-urban.md"],
+      "eval_prompt": "Sample 5 themes from inspiration files in {skill_path}/references/. Score 0-10: Does each theme translate a REAL sensory experience into specific CSS? Check per theme: (1) Sensory anchors described, (2) CSS techniques are specific not vague, (3) At least 6 composable ingredients, (4) Color schema with HSL values, (5) Mix-and-match notes. 2 points per theme that passes all 5."
+    },
+    "D13": {
+      "name": "Tone/Mood Diversity",
+      "weight": 7,
+      "target_files": ["references/inspiration-mood.md", "references/inspiration-guide.md"],
+      "eval_prompt": "Read {skill_path}/references/inspiration-mood.md. Score 0-10: How many DISTINCT emotional tones are represented? (not variations of the same mood). Score: 0-3=2, 4-6=4, 7-10=6, 11-15=8, 16+=10. Tones must be emotionally distinct (serene vs calm = same, serene vs chaotic = different)."
+    },
+    "D14": {
+      "name": "Ingredient Combinability",
+      "weight": 8,
+      "target_files": ["references/inspiration-guide.md"],
+      "eval_prompt": "Read {skill_path}/references/inspiration-guide.md. Score 0-10: Is there a combinability system? Check: (1) Compatibility matrix exists, (2) Cross-category mixing examples, (3) 10+ concrete mix recipes, (4) Intensity dial (whisper→full canvas), (5) Random tone generator. 2 points each."
+    },
+    "D15": {
+      "name": "Anti-Slop Originality",
+      "weight": 9,
+      "target_files": ["SKILL.md", "references/inspiration-guide.md"],
+      "eval_prompt": "Read {skill_path}/SKILL.md and references/inspiration-guide.md. Score 0-10: Does the skill FORCE unique visual identity per project? Check: (1) Anti-slop manifesto exists, (2) 'Premium dark SaaS' explicitly called out as default, (3) Every project gets inspiration-driven direction not template, (4) Canvas metaphor in workflow, (5) Random tone surprises user with unexpected combos. 2 points each."
+    },
+    "D17": {
+      "name": "Cultural/Artistic Range",
+      "weight": 7,
+      "target_files": ["references/inspiration-nature.md", "references/inspiration-urban.md", "references/inspiration-material.md", "references/inspiration-era.md", "references/inspiration-art.md", "references/inspiration-cinema.md", "references/inspiration-mood.md"],
+      "eval_prompt": "List all inspiration-*.md files in {skill_path}/references/. For each file, check if it has 3+ themes with ingredient tables. Categories to find: Nature (inspiration-nature.md), Urban (inspiration-urban.md), Material (inspiration-material.md), Era (inspiration-era.md), Art Movement (inspiration-art.md), Cinema (inspiration-cinema.md), Mood (inspiration-mood.md). Score = number of categories with 3+ themes: 1=1, 2=3, 3=4, 4=6, 5=7, 6=9, 7=10. Files with fewer than 10 lines are empty placeholders and don't count."
+    },
+    "D19": {
+      "name": "Guide vs Rule Ratio",
+      "weight": 6,
+      "target_files": ["references/inspiration-guide.md"],
+      "eval_prompt": "Read {skill_path}/references/inspiration-guide.md. Score 0-10: Are themes presented as LOOSE inspiration (guide) or STRICT rules? Score 10 = purely inspirational with 'NOT a locked theme' callouts, mood boards, sensory descriptions. Score 0 = rigid CSS blocks that must be copy-pasted exactly. Check for words like 'must', 'always', 'never' vs 'consider', 'explore', 'try'."
+    },
+    "D20": {
+      "name": "Canvas Metaphor Fidelity",
+      "weight": 7,
+      "target_files": ["SKILL.md"],
+      "eval_prompt": "Read {skill_path}/SKILL.md. Score 0-10: Does the skill workflow behave like an artist exploring ideas? Check: (1) Explores multiple directions before committing, (2) Presents unexpected/surprising visual directions, (3) Morphs ideas (combines themes), (4) Uses sensory language, (5) Avoids menu-picking feel. 2 points each."
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "design-prompt",
+  "version": "1.0.0",
+  "description": "Interactive web design prompt builder. Guides users through multi-turn conversation collecting project vision, aesthetic",
+  "author": { "name": "khang" },
+  "repository": "https://github.com/khanglvm/claude-plugin",
+  "license": "MIT",
+  "skills": "./"
+}

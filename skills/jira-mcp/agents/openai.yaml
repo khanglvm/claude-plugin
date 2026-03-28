@@ -1,0 +1,4 @@
+interface:
+  display_name: "Jira MCP"
+  short_description: "Jira Server 7.x issue management via MCP tools with JQL, transitions, and formatted responses"
+  default_prompt: "Use $jira-mcp to manage Jira Server 7.x issues: search with JQL (use statusCategory not status for broad filters), get/create/update issues, transition status via jira_get_transitions then jira_transition_issue, and always include clickable ticket links in responses."

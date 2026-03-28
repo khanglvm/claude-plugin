@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fix Codex Skill"
+  short_description: "Repair global and project skills for Codex format"
+  default_prompt: "Use $fix-codex-skill to scan skill folders and repair Codex compatibility issues."

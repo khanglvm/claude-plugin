@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex CLI"
+  short_description: "Official Codex CLI setup, config, usage, and security"
+  default_prompt: "Use $codex-cli to provide official OpenAI Codex CLI guidance, including config setting file options, usage, auth, MCP, sandbox, approvals, and troubleshooting."

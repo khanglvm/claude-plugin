@@ -1,0 +1,10 @@
+{
+  "name": "khang-plugins",
+  "version": "2.0.0",
+  "description": "Collection of Claude Code skills: proposal (deterministic implementation workflow), design-prompt (web design prompt builder with 63+ inspiration themes), and llm-router (unified LLM gateway for multi-model routing).",
+  "author": { "name": "khang" },
+  "repository": "https://github.com/khanglvm/claude-plugin",
+  "license": "MIT",
+  "keywords": ["workflow", "implementation", "design", "web-design", "inspiration", "proposal", "llm-router"],
+  "skills": "./skills/"
+}

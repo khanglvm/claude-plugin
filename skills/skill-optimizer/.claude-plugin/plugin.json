@@ -1,0 +1,9 @@
+{
+  "name": "skill-optimizer",
+  "version": "1.0.0",
+  "description": "Autoresearch-pattern skill improvement loop. Analyzes any Claude skill, creates improvement criteria through interactive",
+  "author": { "name": "khang" },
+  "repository": "https://github.com/khanglvm/claude-plugin",
+  "license": "MIT",
+  "skills": "./"
+}

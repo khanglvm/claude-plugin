@@ -1,0 +1,9 @@
+{
+  "name": "codex-cli",
+  "version": "1.0.0",
+  "description": "description: This skill should be used whenever the user mentions Codex CLI (including "codex", "openai codex cli", "cod",
+  "author": { "name": "khang" },
+  "repository": "https://github.com/khanglvm/claude-plugin",
+  "license": "MIT",
+  "skills": "./"
+}
