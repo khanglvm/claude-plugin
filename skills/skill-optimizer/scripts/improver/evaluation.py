@@ -37,7 +37,11 @@ def precompute_file_facts(skill_path: str, target_files: list[str]) -> str:
         heading_count = result.stdout.strip() or "0"
         result = subprocess.run(["grep", "-c", "^```", fpath], capture_output=True, text=True)
         code_blocks = int(result.stdout.strip() or "0") // 2
-        facts.append(f"- {tf}: {line_count} lines, {heading_count} headings, {code_blocks} code blocks")
+        result = subprocess.run(["grep", "-ciE", "TODO|FIXME", fpath], capture_output=True, text=True)
+        todo_count = result.stdout.strip() or "0"
+        result = subprocess.run(["grep", "-c", "^|", fpath], capture_output=True, text=True)
+        table_rows = result.stdout.strip() or "0"
+        facts.append(f"- {tf}: {line_count} lines, {heading_count} headings, {code_blocks} code blocks, {todo_count} TODO/FIXMEs, {table_rows} table rows")
     return "\n".join(facts) if facts else "No target files found"
 
 
@@ -46,6 +50,13 @@ def evaluate_binary_checklist(skill_config: dict, criterion_id: str, criterion: 
     skill_path = skill_config["skill_path"]
     checklist = criterion["checklist"]
     target_files = criterion.get("target_files", [])
+
+    # Pre-flight: verify all target files exist before running LLM eval
+    missing = [tf for tf in target_files if not os.path.exists(os.path.join(skill_path, tf))]
+    if missing:
+        print(f"    [{criterion_id}] SKIP — missing files: {missing}")
+        return {"score": 0, "confidence": "low", "weighted_score": 0.0}
+
     file_facts = precompute_file_facts(skill_path, target_files)
     max_points = sum(c["points"] for c in checklist)
 
@@ -69,6 +80,7 @@ TARGET: {skill_path} (files: {' '.join(target_files)})
 
 ## Evaluation Rules:
 - Read ALL target files FIRST. Then evaluate each item above.
+- Use the pre-computed file facts above for counts — do NOT estimate or count manually.
 - PASS = the item is clearly, demonstrably present with substance.
 - FAIL = absent, superficial, or only partially present.
 - No partial credit. Each item is binary.
@@ -115,12 +127,15 @@ Return ONLY this JSON array (one entry per item, same order):
 
 def _parse_result(output: str) -> dict | None:
     """Parse score + confidence from claude output."""
+    # Tier 1: line-by-line JSON parse with structure validation
     for line in output.split("\n"):
         line = line.strip()
         if "{" in line and "score" in line:
             try:
                 data = json.loads(line)
-                score = min(10, max(0, int(data.get("score", 0))))
+                if not (isinstance(data, dict) and "score" in data and isinstance(data["score"], (int, float))):
+                    continue
+                score = min(10, max(0, int(data["score"])))
                 confidence = data.get("confidence", "medium")
                 if confidence not in CONFIDENCE_WEIGHTS:
                     confidence = "medium"
@@ -129,15 +144,17 @@ def _parse_result(output: str) -> dict | None:
                 return {"score": score, "confidence": confidence}
             except json.JSONDecodeError:
                 pass
+    # Tier 2: regex block extraction with structure validation
     json_match = re.search(r'\{[^{}]*"score"[^{}]*\}', output, re.DOTALL)
     if json_match:
         try:
             data = json.loads(json_match.group())
-            score = min(10, max(0, int(data.get("score", 0))))
-            confidence = data.get("confidence", "medium")
-            if confidence not in CONFIDENCE_WEIGHTS:
-                confidence = "medium"
-            return {"score": score, "confidence": confidence}
+            if isinstance(data, dict) and "score" in data and isinstance(data["score"], (int, float)):
+                score = min(10, max(0, int(data["score"])))
+                confidence = data.get("confidence", "medium")
+                if confidence not in CONFIDENCE_WEIGHTS:
+                    confidence = "medium"
+                return {"score": score, "confidence": confidence}
         except (json.JSONDecodeError, ValueError):
             pass
     numbers = re.findall(r'"score"\s*:\s*(\d+)', output)
@@ -155,6 +172,16 @@ def evaluate_criterion(skill_config: dict, criterion_id: str, criterion: dict,
     skill_path = skill_config["skill_path"]
     eval_prompt = criterion["eval_prompt"].replace("{skill_path}", skill_path)
     target_files = criterion.get("target_files", [])
+
+    # Pre-flight: verify all target files exist before running LLM eval
+    missing = [tf for tf in target_files if not os.path.exists(os.path.join(skill_path, tf))]
+    if missing:
+        print(f"    [{criterion_id}] SKIP — missing files: {missing}")
+        if fallback_score is not None:
+            return {"score": fallback_score, "confidence": "low",
+                    "weighted_score": fallback_score * CONFIDENCE_WEIGHTS["low"]}
+        return {"score": 0, "confidence": "low", "weighted_score": 0.0}
+
     target_files_str = " ".join(target_files)
     file_facts = precompute_file_facts(skill_path, target_files)
 
@@ -195,7 +222,7 @@ RULES:
 - Absent evidence = 0 for that item. No benefit of the doubt.
 - When uncertain, score LOWER.
 - Score 8+ requires ALL major checklist items verified.
-- Use the pre-computed file facts above for line counts and structure — do NOT estimate.
+- Use the pre-computed file facts above for line counts and structure — do NOT estimate or count manually.
 
 ## Confidence Level
 Rate your OWN confidence in the accuracy of this score:
@@ -255,9 +282,24 @@ def verify_score_jump(skill_config: dict, criterion_id: str, criterion: dict,
         return post_score
 
     print(f"    [ANTIGAMING] {criterion_id} jumped {pre_score}→{post_score} (+{jump}). Verifying...")
+
+    # Binary checklist criteria: re-run the checklist evaluation directly
+    if "checklist" in criterion:
+        result = evaluate_binary_checklist(skill_config, criterion_id, criterion)
+        v_score = result["score"]
+        gap = abs(post_score - v_score)
+        if gap >= 3:
+            verified = (post_score + v_score) // 2
+            print(f"    [ANTIGAMING] Verification disagrees: {post_score} vs {v_score} → using {verified}")
+            return verified
+        print(f"    [ANTIGAMING] Verification confirmed: {v_score} (gap={gap})")
+        return min(post_score, v_score)
+
     skill_path = skill_config["skill_path"]
-    target_files = " ".join(criterion.get("target_files", []))
+    target_files_list = criterion.get("target_files", [])
+    target_files = " ".join(target_files_list)
     original_eval = criterion["eval_prompt"].replace("{skill_path}", skill_path)
+    file_facts = precompute_file_facts(skill_path, target_files_list)
 
     verify_prompt = f"""You are a skeptical quality auditor performing a VERIFICATION check.
 
@@ -265,6 +307,10 @@ A previous evaluation scored this criterion {post_score}/10. Your job is to veri
 
 CRITERION: {criterion_id} — {criterion['name']}
 TARGET: {skill_path} (files: {target_files})
+
+## Pre-Computed File Facts (verified via bash — do NOT estimate or count manually):
+{file_facts}
+
 
 WHAT TO CHECK (same rubric, different words):
 {original_eval}
