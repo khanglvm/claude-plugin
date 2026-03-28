@@ -22,7 +22,7 @@ def research_criterion(skill_config: dict, criterion_id: str, criterion: dict) -
 
 FILES TO ANALYZE (at {skill_path}): {target_files}
 
-## Pre-Computed File Stats:
+## Pre-Computed File Facts (verified via bash — trust these numbers, do NOT estimate or count manually):
 {file_facts}
 
 ## Tasks (in order):
@@ -134,6 +134,8 @@ def improve_criterion(skill_config: dict, criterion_id: str, criterion: dict,
     if not research_summary:
         research_summary = "(research agent failed — read files directly)"
 
+    file_facts = precompute_file_facts(skill_path, criterion.get("target_files", []))
+
     if "checklist" in criterion:
         checklist_items = "\n".join(
             f"  - [{c['points']}pt] {c['item']}" for c in criterion["checklist"]
@@ -173,6 +175,9 @@ def improve_criterion(skill_config: dict, criterion_id: str, criterion: dict,
 
 ## Current State (from independent research)
 {research_summary}
+
+## Pre-Computed File Facts (verified via bash — trust these numbers, do NOT estimate or count manually):
+{file_facts}
 
 ## What Needs Improvement
 Criterion: {criterion['name']} (current score: {current_score}/10)
