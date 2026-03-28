@@ -118,17 +118,43 @@ python3 scripts/improve.py \
   --skill-path <path-to-skill> \
   --hours <duration> \
   --parallel <parallelism> \
-  --cycle-minutes 8
+  --cycle-minutes 8 \
+  --auto-refine
 ```
 
 The loop:
-1. **Evaluate** all criteria (parallel `claude -p` calls)
-2. **Pick weakest** criterion (lowest score * highest weight)
-3. **Improve** via `claude -p` with Write/Edit tools
-4. **Re-evaluate** the targeted criterion
-5. **Keep** if score improved, **revert** via `git checkout` if not
-6. **Log** result to `data/results-<skill>.jsonl`
-7. **Repeat** until time expires
+1. **Hot-reload** criteria from disk (manual edits take effect next cycle)
+2. **Evaluate** all criteria (parallel `claude -p` calls)
+3. **Pick weakest** criterion (lowest score * highest weight, skipping cooldown/parked)
+4. **Improve** via `claude -p` with Write/Edit tools
+5. **Re-evaluate** the targeted criterion
+6. **Keep** if score improved, **revert** via `git checkout` if not
+7. **Track** success/failure — cooldown after 3 consecutive fails, park after 6 total
+8. **Auto-refine** stuck eval_prompts if `--auto-refine` enabled
+9. **Log** result to `data/results-<skill>.jsonl`
+10. **Repeat** until time expires or all criteria blocked
+
+### Stuck Criteria Handling
+
+The loop tracks consecutive and total failures per criterion:
+
+| Threshold | Action |
+|-----------|--------|
+| 3 consecutive reverts | **Cooldown** — skip for 3 cycles, then retry |
+| 6 total failures | **Park** — stop targeting until criteria refined or manually unparked |
+| All criteria blocked | **Halt** — stop loop after 3 consecutive all-blocked cycles |
+
+**`--auto-refine` mode:** When a criterion is about to hit cooldown, the loop spawns an agent to rewrite the `eval_prompt` in the criteria JSON. The refined prompt is saved to disk, failure counters reset, and the criterion gets a fresh start. If a parked criterion exists and all others are blocked, auto-refine attempts to unpark it.
+
+**Manual intervention:** Edit `criteria/<skill>.json` at any time — the loop hot-reloads criteria each cycle. Or use `--unpark` to reset failure state:
+
+```bash
+# Unpark specific criteria
+python3 scripts/improve.py --skill <name> --unpark C1 C3
+
+# Unpark all
+python3 scripts/improve.py --skill <name> --unpark
+```
 
 ### Phase 6: Report
 
@@ -137,6 +163,7 @@ After loop completes, generate summary:
 - Improvements kept vs reverted
 - Score progression (baseline → final)
 - Per-criterion before/after
+- Parked and struggling criteria (with tip to review eval_prompts)
 - Recommendations for next loop
 
 ## Script Reference
@@ -154,12 +181,20 @@ After loop completes, generate summary:
 # From skill-optimizer directory
 python3 scripts/improve.py --skill <name> --skill-path <path> --hours 1 --parallel 2
 
+# With auto-refine for stuck criteria
+python3 scripts/improve.py --skill <name> --skill-path <path> --hours 2 --auto-refine
+
+# Unpark criteria before running
+python3 scripts/improve.py --skill <name> --unpark C1 C3 --hours 1
+
 # Options
 --skill         Skill name (used for state/results files)
 --skill-path    Path to skill folder (absolute or relative)
 --hours         Duration in hours (default: 1.0)
 --parallel      Max parallel eval agents (default: 2)
 --cycle-minutes Minutes per improvement cycle (default: 8)
+--auto-refine   Auto-rewrite stuck eval_prompts instead of just parking
+--unpark [CID]  Reset failure state for specific criteria (or all if no IDs)
 ```
 
 ## Criteria JSON Format
