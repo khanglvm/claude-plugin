@@ -27,6 +27,24 @@ CLAUDE_BIN = "claude"
 EVAL_MODEL = "sonnet"       # primary eval model
 EVAL_MODEL_2 = "haiku"      # secondary eval model (cross-model cancels self-enhancement bias)
 IMPROVE_MODEL = "sonnet"    # model for improvement edits
+MODEL_PROFILE = "balanced"  # quality | balanced | budget | auto
+
+# Model profiles: presets for eval/improve model selection
+# quality  = opus+sonnet  (best accuracy, highest cost, opus 1M context for large files)
+# balanced = sonnet+haiku (good accuracy, moderate cost — default)
+# budget   = haiku+haiku  (fastest, cheapest, lower accuracy)
+# auto     = pick per-criterion based on complexity signals
+MODEL_PROFILES = {
+    "quality":  {"eval": "opus",   "eval_2": "sonnet", "improve": "opus"},
+    "balanced": {"eval": "sonnet", "eval_2": "haiku",  "improve": "sonnet"},
+    "budget":   {"eval": "haiku",  "eval_2": "haiku",  "improve": "haiku"},
+}
+
+# Auto-routing thresholds: criterion signals → model tier
+# Complexity signals checked: target file total lines, checklist item count,
+# number of target files, weight
+AUTO_ROUTE_OPUS_THRESHOLD = 800     # total target file lines above this → opus
+AUTO_ROUTE_HAIKU_THRESHOLD = 200    # total target file lines below this → haiku
 
 # Ensure data dirs exist
 DATA_DIR.mkdir(exist_ok=True)
@@ -128,6 +146,62 @@ def run_claude(prompt: str, allowed_tools: str = "Read,Grep,Glob", timeout: int 
         return f"[ERROR: {e}]"
 
 
+def auto_route_model(skill_path: str, criterion: dict, role: str = "eval") -> str:
+    """Auto-select model based on criterion complexity signals.
+    role: 'eval' (primary eval), 'eval_2' (secondary eval), 'improve' (edit agent).
+    Complexity signals: total target file lines, checklist items, weight, file count.
+    Higher complexity → stronger model (opus has 1M context for large inputs)."""
+    target_files = criterion.get("target_files", [])
+    checklist = criterion.get("checklist", [])
+    weight = criterion.get("weight", 5)
+
+    # Compute total lines across target files
+    total_lines = 0
+    for tf in target_files:
+        fpath = os.path.join(skill_path, tf)
+        if os.path.exists(fpath):
+            try:
+                result = subprocess.run(["wc", "-l", fpath], capture_output=True, text=True)
+                total_lines += int(result.stdout.strip().split()[0])
+            except (ValueError, IndexError):
+                pass
+
+    # Complexity score: weighted combination of signals
+    complexity = total_lines
+    if len(checklist) >= 6:
+        complexity += 200  # many checklist items = harder to evaluate accurately
+    if len(target_files) >= 3:
+        complexity += 200  # cross-file evaluation = harder
+    if weight >= 9:
+        complexity += 200  # high-weight = want higher accuracy
+
+    if complexity >= AUTO_ROUTE_OPUS_THRESHOLD:
+        tier = {"eval": "opus", "eval_2": "sonnet", "improve": "opus"}
+    elif complexity <= AUTO_ROUTE_HAIKU_THRESHOLD:
+        tier = {"eval": "haiku", "eval_2": "haiku", "improve": "sonnet"}
+    else:
+        tier = {"eval": "sonnet", "eval_2": "haiku", "improve": "sonnet"}
+
+    model = tier.get(role, "sonnet")
+    return model
+
+
+def resolve_eval_models(skill_path: str, criterion: dict) -> tuple[str, str]:
+    """Resolve primary and secondary eval models based on profile.
+    Returns (primary_model, secondary_model)."""
+    if MODEL_PROFILE == "auto":
+        return (auto_route_model(skill_path, criterion, "eval"),
+                auto_route_model(skill_path, criterion, "eval_2"))
+    return EVAL_MODEL, EVAL_MODEL_2
+
+
+def resolve_improve_model(skill_path: str, criterion: dict) -> str:
+    """Resolve improve model based on profile."""
+    if MODEL_PROFILE == "auto":
+        return auto_route_model(skill_path, criterion, "improve")
+    return IMPROVE_MODEL
+
+
 def get_modified_files(skill_path: str) -> set:
     """Get files modified in working tree relative to HEAD."""
     result = subprocess.run(
@@ -209,8 +283,11 @@ TARGET: {skill_path} (files: {' '.join(target_files)})
 Return ONLY this JSON array (one entry per item, same order):
 [{{"item": 1, "verdict": "PASS|FAIL", "evidence": "<brief>"}}]"""
 
+    m1, _ = resolve_eval_models(skill_path, criterion)
+    if MODEL_PROFILE == "auto":
+        print(f"    [{criterion_id}] auto-routed → {m1}")
     output = run_claude(prompt, allowed_tools="Read", timeout=180,
-                        model=EVAL_MODEL, max_turns=5)
+                        model=m1, max_turns=5)
 
     # Parse binary verdicts
     passed_points = 0
@@ -350,8 +427,10 @@ Return ONLY this JSON:
     # Cross-model dual-sample: different models cancel self-enhancement bias
     # Model capability weights for consensus (higher = more trusted)
     MODEL_CAPABILITY = {"opus": 1.0, "sonnet": 0.85, "haiku": 0.65}
-    m1, m2 = EVAL_MODEL, EVAL_MODEL_2
+    m1, m2 = resolve_eval_models(skill_path, criterion)
 
+    if MODEL_PROFILE == "auto":
+        print(f"    [{criterion_id}] auto-routed → {m1}+{m2}")
     output1 = run_claude(prompt, allowed_tools="Read", timeout=180,
                          model=m1, max_turns=5)
     output2 = run_claude(prompt, allowed_tools="Read", timeout=180,
@@ -426,8 +505,9 @@ VERIFICATION RULES:
 Return ONLY: {{"score": <0-10>, "confidence": "<high|medium|low>", "reasoning": "<why>"}}"""
 
     import re
+    m1, _ = resolve_eval_models(skill_path, criterion)
     output = run_claude(verify_prompt, allowed_tools="Read", timeout=180,
-                        model=EVAL_MODEL, max_turns=5)
+                        model=m1, max_turns=5)
 
     # Parse verification score
     for line in output.split("\n"):
@@ -742,11 +822,12 @@ FILES TO ANALYZE (at {skill_path}): {target_files}
 Be FACTUAL. Do not suggest improvements. Do not evaluate quality. Just describe.
 Keep summary under 500 words. Use bullet points, not prose."""
 
+    research_model = resolve_improve_model(skill_path, criterion)
     output = run_claude(
         research_prompt,
         allowed_tools="Read,Bash,Grep,Glob",
         timeout=180,
-        model=EVAL_MODEL,
+        model=research_model,
         max_turns=5,
         cwd=skill_path
     )
@@ -810,11 +891,13 @@ Each theme should have: name, what to check, why it matters.
 
 Keep total output under 600 words. Prioritize actionable findings over comprehensive coverage."""
 
+    # Domain research benefits from larger context (opus 1M) for web content
+    domain_model = "opus" if MODEL_PROFILE in ("quality", "auto") else EVAL_MODEL
     output = run_claude(
         research_prompt,
         allowed_tools="Read,WebSearch,WebFetch,Bash",
         timeout=300,
-        model=EVAL_MODEL,
+        model=domain_model,
         max_turns=8,
         cwd=skill_path
     )
@@ -996,10 +1079,12 @@ RULES:
 - Keep files under 300 lines each
 - Don't remove existing good content"""
 
+    improve_model = resolve_improve_model(skill_path, criterion)
     output = run_claude(
         improve_prompt,
         allowed_tools="Read,Edit",
         timeout=300,
+        model=improve_model,
         max_turns=10,
         cwd=skill_path
     )
@@ -1039,8 +1124,9 @@ Return ONLY a JSON object:
 {{"refined_eval_prompt": "<new eval_prompt text>", "reasoning": "<why the old one was stuck>"}}
 Nothing else."""
 
+    refine_model = resolve_improve_model(skill_path, criterion)
     output = run_claude(refine_prompt, allowed_tools="Read,Grep,Glob", timeout=180,
-                        model=EVAL_MODEL, max_turns=5)
+                        model=refine_model, max_turns=5)
 
     # Parse the refined prompt
     try:
@@ -1152,11 +1238,13 @@ Return ONLY a JSON array (no markdown, no explanation):
 
 Return empty array [] if no new criteria are needed."""
 
+    # Discovery benefits from stronger model (creative analysis task)
+    discover_model = "opus" if MODEL_PROFILE in ("quality", "auto") else EVAL_MODEL
     output = run_claude(
         discover_prompt,
         allowed_tools="Read,Grep,Glob",
         timeout=180,
-        model=EVAL_MODEL,
+        model=discover_model,
         max_turns=5,
         cwd=skill_path
     )
@@ -1480,7 +1568,10 @@ def run_loop(skill_name: str, hours: float, parallel: int, cycle_minutes: int = 
     print(f"  Criteria: {len(skill_config['criteria'])} total | {active_count} active | "
           f"{len(graduated)} graduated | {len(parked)} parked | cap: {MAX_ACTIVE_CRITERIA}")
     print(f"  Auto-refine: {'ON' if auto_refine else 'OFF'}")
-    print(f"  Eval: {EVAL_MODEL}+{EVAL_MODEL_2} (cross-model) | Improve: {IMPROVE_MODEL}")
+    if MODEL_PROFILE == "auto":
+        print(f"  Profile: auto (per-criterion routing: opus/sonnet/haiku based on complexity)")
+    else:
+        print(f"  Profile: {MODEL_PROFILE} | Eval: {EVAL_MODEL}+{EVAL_MODEL_2} | Improve: {IMPROVE_MODEL}")
     print(f"  Tiered eval: hot=every cycle, warm=every {WARM_TIER_INTERVAL}, cold=every {COLD_TIER_INTERVAL}")
     if end_time:
         print(f"  End time: {end_time.strftime('%H:%M:%S')}")
@@ -1584,7 +1675,7 @@ def run_loop(skill_name: str, hours: float, parallel: int, cycle_minutes: int = 
 
 
 def main():
-    global EVAL_MODEL, EVAL_MODEL_2, IMPROVE_MODEL, MAX_ACTIVE_CRITERIA
+    global EVAL_MODEL, EVAL_MODEL_2, IMPROVE_MODEL, MAX_ACTIVE_CRITERIA, MODEL_PROFILE
     parser = argparse.ArgumentParser(description="Skill Autoresearch Loop")
     parser.add_argument("--skill", required=True, help="Skill name (matches criteria/<name>.json)")
     parser.add_argument("--skill-path", default=None, help="Path to skill folder (overrides criteria JSON path)")
@@ -1600,10 +1691,16 @@ def main():
                         help="Signal a running loop to stop after current cycle")
     parser.add_argument("--unpark", nargs="*", metavar="CID",
                         help="Unpark specific criteria (or all if no IDs given)")
-    parser.add_argument("--eval-model", default=None, help="Primary eval model (default: sonnet)")
+    parser.add_argument("--profile", choices=["quality", "balanced", "budget", "auto"],
+                        default="balanced",
+                        help="Model profile: quality (opus+sonnet), balanced (sonnet+haiku), "
+                             "budget (haiku+haiku), auto (per-criterion routing). Default: balanced")
+    parser.add_argument("--eval-model", default=None,
+                        help="Primary eval model override (default: set by --profile)")
     parser.add_argument("--eval-model-2", default=None,
-                        help="Secondary eval model for cross-model ensemble (default: haiku)")
-    parser.add_argument("--improve-model", default=None, help="Model for improve agents (default: sonnet)")
+                        help="Secondary eval model override (default: set by --profile)")
+    parser.add_argument("--improve-model", default=None,
+                        help="Improve model override (default: set by --profile)")
     parser.add_argument("--no-multi-sample", action="store_true", help="Disable dual-sample scoring")
     parser.add_argument("--discover-interval", type=int, default=DISCOVER_INTERVAL,
                         help=f"Run criteria discovery every N cycles (0=disabled, default: {DISCOVER_INTERVAL})")
@@ -1662,9 +1759,16 @@ def main():
         if not args.hours and not args.max_loops:
             return  # Standalone command
 
-    # Apply global overrides
+    # Apply model profile, then individual overrides
     if args.max_active != MAX_ACTIVE_CRITERIA:
         MAX_ACTIVE_CRITERIA = args.max_active
+    MODEL_PROFILE = args.profile
+    if args.profile != "auto" and args.profile in MODEL_PROFILES:
+        profile = MODEL_PROFILES[args.profile]
+        EVAL_MODEL = profile["eval"]
+        EVAL_MODEL_2 = profile["eval_2"]
+        IMPROVE_MODEL = profile["improve"]
+    # Individual flags override profile settings
     if args.eval_model:
         EVAL_MODEL = args.eval_model
     if args.eval_model_2:

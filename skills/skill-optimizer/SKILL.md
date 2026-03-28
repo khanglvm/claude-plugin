@@ -416,14 +416,42 @@ python3 scripts/improve.py --skill <name> --unpark C1 C3 --hours 1
 --domain-research  Run web-based domain research before starting the loop
 --discover-interval N  Run criteria discovery every N cycles (0=disabled, default: 5)
 --calibrate <mode> Create gold standard (create) or check eval drift (check)
---eval-model       Primary eval model (default: sonnet)
---eval-model-2     Secondary eval model for cross-model ensemble (default: haiku)
---improve-model    Model for improvement agents (default: sonnet)
+--profile <name>   Model profile preset (default: balanced). See Model Profiles below.
+--eval-model       Primary eval model override (overrides profile)
+--eval-model-2     Secondary eval model override (overrides profile)
+--improve-model    Improve model override (overrides profile)
 --no-multi-sample  Disable dual-sample scoring (faster but less reliable)
 --stop             Signal a running loop to stop after current cycle
 --unpark [CID]     Reset failure state for specific criteria (or all if no IDs)
 --max-active N     Max active criteria cap (default: 15). Overflow force-graduates highest-scoring
 --graduate [CID]   List graduated criteria (no args) or manually graduate specific ones
+```
+
+### Model Profiles
+
+Select with `--profile <name>`. Individual `--eval-model` / `--improve-model` flags override profile defaults.
+
+| Profile | Eval (primary) | Eval (secondary) | Improve | Use When |
+|---------|---------------|------------------|---------|----------|
+| **quality** | opus | sonnet | opus | High-stakes skills, large files (opus has 1M context) |
+| **balanced** | sonnet | haiku | sonnet | Default — good accuracy, moderate cost |
+| **budget** | haiku | haiku | haiku | Quick iteration, simple criteria, cost-sensitive |
+| **auto** | *per-criterion* | *per-criterion* | *per-criterion* | Mixed complexity — routes each criterion to the right model |
+
+**Auto-routing** analyzes each criterion's complexity before selecting a model:
+- **opus** — total target file lines > 800, or high weight (9-10) + many checklist items + cross-file eval
+- **sonnet** — moderate complexity (200-800 lines)
+- **haiku** — simple criteria with small files (< 200 lines)
+
+```bash
+# Quality-first: opus eval + sonnet cross-check
+python3 scripts/improve.py --skill <name> --skill-path <path> --profile quality --hours 1
+
+# Auto: let the system pick per criterion
+python3 scripts/improve.py --skill <name> --skill-path <path> --profile auto --hours 1
+
+# Budget: fast iteration with haiku
+python3 scripts/improve.py --skill <name> --skill-path <path> --profile budget --max-loops 10
 ```
 
 ## Criteria JSON Format
