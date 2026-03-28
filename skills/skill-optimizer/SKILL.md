@@ -1,9 +1,9 @@
 ---
 name: skill-optimizer
-description: "Autoresearch-pattern skill improvement loop. Analyzes any Claude skill, creates improvement criteria through interactive interview, then runs programmatic evaluate-improve-keep/revert cycles via claude CLI. Use when asked to 'improve a skill', 'optimize a skill', 'run autoresearch on skill', 'make this skill better', 'skill improvement loop', or when the user wants to iteratively improve any Claude Code skill using the Karpathy autoresearch pattern."
+description: "Autoresearch-pattern skill improvement loop with context-engineered agent orchestration. Analyzes any Claude skill, creates improvement criteria through interactive interview, then runs programmatic evaluate-improve-keep/revert cycles via claude CLI. Use when asked to 'improve a skill', 'optimize a skill', 'run autoresearch on skill', 'make this skill better', 'skill improvement loop', or when the user wants to iteratively improve any Claude Code skill using the Karpathy autoresearch pattern."
 metadata:
   author: khang
-  version: "1.0.0"
+  version: "1.2.0"
 ---
 
 # Skill Optimizer — Autoresearch Improvement Loop
@@ -36,8 +36,10 @@ Collect from the user via `AskUserQuestion`:
    - Can be relative to CWD or absolute
    - Validate: `SKILL.md` exists, read it to understand the skill
 
-2. **Session duration** — How long to run (default: 1 hour)
-   - Accept: `30m`, `1h`, `2h`, `overnight`
+2. **Session limit** — How long or how many cycles to run
+   - Duration: `30m`, `1h`, `2h`, `overnight` (default: 1 hour)
+   - Loop count: `5 loops`, `10 loops`, `20 loops` (exact number of improvement cycles)
+   - Can combine both — loop stops at whichever limit is reached first
 
 3. **Parallelism** — Max parallel eval agents (default: 2)
    - 1 = sequential, 2-4 = parallel evals
@@ -47,7 +49,7 @@ Collect from the user via `AskUserQuestion`:
 Read the target skill thoroughly:
 1. Read `SKILL.md` — understand purpose, workflow, structure
 2. Read all `references/*.md` — understand depth and coverage
-3. Count lines, files, themes/sections
+3. Use `Bash` to count lines, files, themes/sections (deterministic, not estimated)
 4. Identify: what the skill does well, what's missing, what's vague
 
 Present a **skill profile** to the user:
@@ -59,11 +61,43 @@ Strengths: [list]
 Gaps: [list]
 ```
 
+### Phase 2.5: Domain Research (Optional but Recommended)
+
+Before creating criteria, research the skill's domain to ground evaluation in external knowledge. Run:
+
+```bash
+python3 scripts/improve.py --skill <name> --skill-path <path> --domain-research
+```
+
+This spawns a research agent with `WebSearch` + `WebFetch` access that:
+1. Searches for best practices in the skill's domain
+2. Finds competing tools, similar frameworks
+3. Identifies common pitfalls and user complaints
+4. Checks technical correctness standards (valid CSS, real font names, etc.)
+5. Proposes 3-5 domain-specific criteria themes
+
+Report saved to `data/domain-research-<skill>.md`. Use findings to inform Phase 3.
+
 ### Phase 3: Criteria Creation (Interactive)
 
-Using the skill analysis + skill-creator's benchmark framework, propose improvement criteria.
+Using the skill analysis + domain research + skill-creator's benchmark framework, propose improvement criteria.
 
-**For each criterion, define:**
+**For each criterion, define — prefer `checklist` (binary PASS/FAIL) over `eval_prompt` (scalar) for any verifiable item. Binary scoring is 4-6x more reliable; use scalar only for genuinely subjective quality dimensions.**
+
+Binary checklist format (preferred for verifiable items):
+```json
+{
+  "name": "Criterion Name",
+  "weight": 1-10,
+  "target_files": ["SKILL.md"],
+  "checklist": [
+    {"item": "Specific verifiable thing that exists or not", "points": 3},
+    {"item": "Another verifiable check", "points": 2}
+  ]
+}
+```
+
+Scalar eval_prompt format (use only when items are too subjective for binary):
 ```json
 {
   "name": "Criterion Name",
@@ -86,6 +120,21 @@ Using the skill analysis + skill-creator's benchmark framework, propose improvem
 | Reference Depth | Are reference files comprehensive and useful? |
 | Security/Scope | Does it declare scope and refuse out-of-scope? |
 
+**Writing effective eval_prompts:**
+
+| Principle | Good | Bad |
+|-----------|------|-----|
+| Binary checklist items | "Section X exists with 3+ entries" | "Section X is good quality" |
+| Concrete point allocation | "2pts per item: (1) exists, (2) has table..." | "Score based on overall quality" |
+| No LLM arithmetic | Let pre-computed facts handle counts | "Count the lines in file X" |
+| Anti-gaming | "Content must be *substantive*, not keyword-stuffing" | "Check if keywords appear" |
+| Scoped to editable files | "Read SKILL.md and check..." | "Verify runtime behavior" |
+
+**Anti-gaming rules for eval_prompts:**
+- Never score purely on presence/absence — require *substance* checks
+- Include at least one "quality gate" per criterion (e.g., "entries must be genuinely distinct, not slight variations")
+- For counting criteria, specify what counts as a valid entry vs padding
+
 Present proposed criteria to user. Let them:
 - Accept all
 - Remove criteria they don't want
@@ -103,36 +152,49 @@ BASELINE: [skill-name]
 D1 Criterion Name:     [score]/10  (weight: [w])
 D2 Criterion Name:     [score]/10  (weight: [w])
 ...
-Weighted total:        [total]/100
+Weighted total:        [total]/10
 ```
 
 Ask user to confirm before starting the loop.
 
 ### Phase 5: Run Loop
 
-Execute the autoresearch loop via the `scripts/improve.py` script:
+Launch the loop as a **background agent** so results report back automatically — the user does NOT need to ask for updates.
+
+**Spawn the background agent** using the `Agent` tool:
+- `name`: `"optimizer-<skill-name>"`
+- `run_in_background`: `true`
+- `prompt`: Run the optimization loop and return structured results when done
+
+The background agent runs:
 
 ```bash
+cd <skill-optimizer-dir>
 python3 scripts/improve.py \
   --skill <skill-name> \
   --skill-path <path-to-skill> \
   --hours <duration> \
+  --max-loops <count> \
   --parallel <parallelism> \
   --cycle-minutes 8 \
   --auto-refine
 ```
 
-The loop:
-1. **Hot-reload** criteria from disk (manual edits take effect next cycle)
-2. **Evaluate** all criteria (parallel `claude -p` calls)
-3. **Pick weakest** criterion (lowest score * highest weight, skipping cooldown/parked)
-4. **Improve** via `claude -p` with Write/Edit tools
-5. **Re-evaluate** the targeted criterion
-6. **Keep** if score improved, **revert** via `git checkout` if not
-7. **Track** success/failure — cooldown after 3 consecutive fails, park after 6 total
-8. **Auto-refine** stuck eval_prompts if `--auto-refine` enabled
-9. **Log** result to `data/results-<skill>.jsonl`
-10. **Repeat** until time expires or all criteria blocked
+After spawning, tell the user:
+> "Optimization loop started for [skill]. Running [X loops / Y hours]. I'll report results automatically when it completes — you can keep working."
+
+**Do NOT poll, sleep, or check status.** The Agent tool notifies you when the background agent finishes. On notification, proceed directly to Phase 6.
+
+The loop (6-step cycle):
+1. **Evaluate** all criteria with confidence-weighted dual-sample scoring + pre-computed file facts
+2. **Discover** new criteria every N cycles (if `--discover-interval` > 0)
+3. **Pick weakest** criterion (lowest score * highest weight * confidence boost, skipping cooldown/parked)
+4. **Improve** via research agent (Read+Bash+Grep) → improve agent (Read+Edit)
+5. **Re-evaluate** affected criteria → **anti-gaming check** if score jumped 5+ points
+6. **Keep/revert** — keep if improved AND total didn't regress, auto-commit on keep
+
+Plus: hot-reload criteria each cycle, cooldown/park stuck criteria, auto-refine if enabled.
+**Log** result to `data/results-<skill>.jsonl`. **Repeat** until time/loops/stop.
 
 ### Stuck Criteria Handling
 
@@ -156,9 +218,52 @@ python3 scripts/improve.py --skill <name> --unpark C1 C3
 python3 scripts/improve.py --skill <name> --unpark
 ```
 
+### Criteria Lifecycle (Context Engineering)
+
+Criteria follow a lifecycle that bounds eval cost as the criteria set grows:
+
+| Tier | Score Range | Eval Frequency | Targeted? |
+|------|-------------|----------------|-----------|
+| **Hot** | 0-6 | Every cycle | Yes |
+| **Warm** | 7-8 | Every 2nd cycle | Yes |
+| **Cold/Graduated** | 9-10 (3+ consecutive) | Every 5th cycle | No |
+| **Parked** | Stuck | Never | No |
+
+**Graduation:** Criteria scoring 9-10 for 3 consecutive cycles are auto-graduated — removed from the improvement loop and only spot-checked. If a spot-check reveals regression below 7, the criterion is un-graduated back to active.
+
+**Active cap:** Max 15 active (non-graduated, non-parked) criteria. If discovery pushes over the cap, the highest-scoring active criteria are force-graduated. Prevents unbounded eval cost growth.
+
+**Overlap detection:** Discovery checks candidate criteria against existing ones for target-file overlap (>50%) AND name similarity. Overlapping candidates are rejected.
+
+```bash
+# List graduated criteria
+python3 scripts/improve.py --skill <name> --graduate
+
+# Manually graduate criteria
+python3 scripts/improve.py --skill <name> --graduate D1 D3
+
+# Set custom active cap
+python3 scripts/improve.py --skill <name> --max-active 20 --hours 1
+```
+
+### Cancellation
+
+The user can request to stop the loop at any time. When requested, run the stop command from a **separate bash call** while the loop is still running:
+
+```bash
+python3 scripts/improve.py --skill <skill-name> --stop
+```
+
+This creates a stop signal file that the running loop checks every ~10 seconds. The loop will:
+1. Finish the current cycle (evaluate + improve + keep/revert)
+2. Print the final summary with all state saved
+3. Exit gracefully
+
+**As the invoking agent:** If the user asks to stop, cancel, or terminate the optimization loop, run the `--stop` command above via a `Bash` tool call. The loop process will detect it and halt cleanly. The background agent will then return with partial results — proceed to Phase 6 with whatever data is available.
+
 ### Phase 6: Report
 
-After loop completes, generate summary:
+When the background agent completes (you are notified automatically), parse its output and present a concise summary to the user:
 - Runs completed
 - Improvements kept vs reverted
 - Score progression (baseline → final)
@@ -166,14 +271,106 @@ After loop completes, generate summary:
 - Parked and struggling criteria (with tip to review eval_prompts)
 - Recommendations for next loop
 
+## Context Engineering
+
+The optimizer applies research-backed context engineering to minimize token waste and maximize agent quality:
+
+### Eval Prompt Structure (Lost-in-the-Middle Defense)
+LLMs reliably attend to instructions at the START and END of prompts but ignore content in the middle ("lost-in-the-middle" problem). Eval prompts are structured to exploit this:
+
+1. **First 30% — Criterion name + scoring rubric**: What to evaluate goes at the top so it's never missed.
+2. **Middle — Pre-computed file facts**: Supporting data (line counts, heading counts) goes in the middle where it serves as context without competing with instructions.
+3. **Last 20% — Final scoring methodology + output format**: How to score and what to return goes at the very end, ensuring the LLM's final attention is on the output format.
+
+**When writing `eval_prompt` text**: Put the criterion-specific checklist first, then any context, never bury rubric items between large data blocks.
+
+### Deterministic Pre-Computation
+Before each eval, `precompute_file_facts()` runs bash commands (`wc -l`, `grep -c`) to gather line counts, heading counts, and code block counts. These facts are injected into the eval prompt as "Pre-Computed File Facts" so the LLM doesn't need to do arithmetic — a known source of scoring noise.
+
+### Confidence-Weighted Scoring
+
+**LLM confidence self-reporting is unreliable.** Research shows LLMs overestimate their own certainty by 20–40% — models frequently self-report `high` confidence even when scores are inconsistent across samples or criteria are vague. For this reason, **the optimizer does not rely on self-reported confidence as the primary calibration signal**. Instead, it uses cross-model disagreement as an objective proxy: when two model families evaluate the same criterion and disagree by 3+ points, confidence is forced to `low` *regardless of what each model individually self-reported*.
+
+Scores are weighted by confidence:
+- **high** (1.0): Clear binary checklist, or models agree within 2 points
+- **medium** (0.7): Some interpretation required
+- **low** (0.4): Major uncertainty, vague criteria, or forced by cross-model disagreement
+
+The weights are conservative by design: `low` (0.4) is 0.4× `high` (1.0) — at most 0.5× — so unreliable evals have a proportionally smaller influence on the optimization direction.
+
+### Anti-Gaming Verification
+When a criterion jumps 5+ points in a single cycle, a **verification pass** runs with a rephrased eval prompt that specifically checks for superficial content. If the verification score disagrees by 3+ points, the average is used instead. Prevents reward hacking where the improve agent adds keyword-matching content without substance.
+
+### Score Stability Detection
+Each cycle compares untouched criteria scores to their previous values. If an untouched criterion shifts 3+ points, it's flagged as `[NOISE]` — indicating the eval_prompt is unreliable and should be rewritten for determinism.
+
+### Selective Re-evaluation
+After each improvement, only criteria whose `target_files` overlap with modified files are re-evaluated. Unchanged criteria keep their previous scores. Full re-evaluation runs every 5th cycle to catch cumulative drift.
+
+### Separated Research → Improve Pipeline
+Following the CRISPY methodology, improvement uses two agents:
+1. **Research agent** (read + bash + grep): Describes what exists in target files without knowing the improvement goal. Runs grep/bash for validation.
+2. **Improve agent** (read + edit): Receives the research summary + edit directives (not scoring language).
+
+### Domain Research (External Grounding)
+The `--domain-research` flag spawns a research agent with `WebSearch` + `WebFetch` access to gather external best practices, competitive analysis, and technical validation standards. This breaks the closed-loop echo chamber of purely introspective evaluation.
+
+### Criteria Discovery
+Every N cycles (default: 5, configurable via `--discover-interval`), the loop spawns an agent that reads the current skill state, identifies quality dimensions not covered by existing criteria, and proposes new ones. Prevents the criteria set from becoming stale.
+
+### Cross-Model Ensemble Scoring
+Each criterion is evaluated by two DIFFERENT models (default: sonnet + haiku). Self-enhancement bias — where an LLM rates its own style 15-30% higher — cancels out across model families. When models disagree by 3+ points, a capability-weighted average is used and confidence drops to `low`. Configurable via `--eval-model` and `--eval-model-2`.
+
+### Binary Checklist Mode (Preferred)
+**Use binary checklist as the default criterion format.** Binary scoring is 4-6x more reliable than scalar 0-10 scoring: LLMs show ~30% inter-rater variance on subjective scales, but near-zero variance on binary PASS/FAIL questions where the answer is verifiable by reading a file. Reserve `eval_prompt` (scalar) only for genuinely subjective quality dimensions (e.g., "prose clarity") that cannot be broken into discrete checks.
+
+Criteria opt into binary evaluation by adding a `checklist` field:
+```json
+{
+  "name": "Example",
+  "checklist": [
+    {"item": "SKILL.md has a Scope section", "points": 2},
+    {"item": "At least 3 reference files exist", "points": 3}
+  ]
+}
+```
+The LLM only decides PASS or FAIL per item (binary). Score = sum of passed points / max points * 10. Always `confidence: high` since no subjective judgment is needed. Use for criteria where every item is verifiable by reading files.
+
+### Ground Truth Calibration
+Before the loop starts, if a gold standard exists (`calibration/<skill>.json`), it evaluates those criteria and compares to expected scores. Drift of 3+ points triggers a `[DRIFT]` warning.
+
+```bash
+# Snapshot current scores as gold standard
+python3 scripts/improve.py --skill <name> --calibrate create
+
+# Check eval drift against gold standard
+python3 scripts/improve.py --skill <name> --calibrate check
+```
+
+Only high-confidence scores are included in the gold standard. This follows the context-engineering principle: "Validate manually before automating."
+
+### Agent Turn Limits
+- Eval: 5 turns max
+- Research: 5 turns max
+- Improve: 10 turns max
+
+### Regression Detection
+After improvement, if the weighted total drops below the pre-improvement total, the change is reverted — even if the targeted criterion improved.
+
+### Auto-Commit on Keep
+Kept improvements are immediately committed to protect from next cycle's revert.
+
 ## Script Reference
 
 | File | Purpose |
 |------|---------|
 | `scripts/improve.py` | Main autoresearch loop (Python) |
 | `criteria/<skill>.json` | Criteria definitions per skill |
-| `data/state-<skill>.json` | Current best scores |
+| `data/state-<skill>.json` | Current best scores + confidence |
 | `data/results-<skill>.jsonl` | Run history (gitignored) |
+| `data/domain-research-<skill>.md` | Domain research report (from `--domain-research`) |
+| `calibration/<skill>.json` | Gold standard scores for eval drift detection |
+| `data/calibration-report-<skill>.json` | Last calibration drift report |
 
 ## improve.py Usage
 
@@ -181,20 +378,52 @@ After loop completes, generate summary:
 # From skill-optimizer directory
 python3 scripts/improve.py --skill <name> --skill-path <path> --hours 1 --parallel 2
 
+# Run for exactly 10 improvement cycles (no time limit)
+python3 scripts/improve.py --skill <name> --skill-path <path> --max-loops 10
+
+# Combine: stop at whichever limit hits first
+python3 scripts/improve.py --skill <name> --skill-path <path> --hours 2 --max-loops 20
+
 # With auto-refine for stuck criteria
 python3 scripts/improve.py --skill <name> --skill-path <path> --hours 2 --auto-refine
+
+# Domain research before running (grounds criteria in external knowledge)
+python3 scripts/improve.py --skill <name> --skill-path <path> --domain-research
+
+# Criteria discovery every 3 cycles
+python3 scripts/improve.py --skill <name> --skill-path <path> --hours 2 --discover-interval 3
+
+# Create gold standard for calibration (after a good baseline run)
+python3 scripts/improve.py --skill <name> --calibrate create
+
+# Check eval drift against gold standard
+python3 scripts/improve.py --skill <name> --calibrate check
+
+# Cancel a running loop (from a separate terminal/bash call)
+python3 scripts/improve.py --skill <name> --stop
 
 # Unpark criteria before running
 python3 scripts/improve.py --skill <name> --unpark C1 C3 --hours 1
 
 # Options
---skill         Skill name (used for state/results files)
---skill-path    Path to skill folder (absolute or relative)
---hours         Duration in hours (default: 1.0)
---parallel      Max parallel eval agents (default: 2)
---cycle-minutes Minutes per improvement cycle (default: 8)
---auto-refine   Auto-rewrite stuck eval_prompts instead of just parking
---unpark [CID]  Reset failure state for specific criteria (or all if no IDs)
+--skill            Skill name (used for state/results files)
+--skill-path       Path to skill folder (absolute or relative)
+--hours            Duration in hours (default: 1, or unlimited if --max-loops set)
+--max-loops        Max improvement cycles (default: unlimited, time-limited only)
+--parallel         Max parallel eval agents (default: 2)
+--cycle-minutes    Minutes per improvement cycle (default: 0, no wait)
+--auto-refine      Auto-rewrite stuck eval_prompts instead of just parking
+--domain-research  Run web-based domain research before starting the loop
+--discover-interval N  Run criteria discovery every N cycles (0=disabled, default: 5)
+--calibrate <mode> Create gold standard (create) or check eval drift (check)
+--eval-model       Primary eval model (default: sonnet)
+--eval-model-2     Secondary eval model for cross-model ensemble (default: haiku)
+--improve-model    Model for improvement agents (default: sonnet)
+--no-multi-sample  Disable dual-sample scoring (faster but less reliable)
+--stop             Signal a running loop to stop after current cycle
+--unpark [CID]     Reset failure state for specific criteria (or all if no IDs)
+--max-active N     Max active criteria cap (default: 15). Overflow force-graduates highest-scoring
+--graduate [CID]   List graduated criteria (no args) or manually graduate specific ones
 ```
 
 ## Criteria JSON Format
@@ -205,23 +434,35 @@ python3 scripts/improve.py --skill <name> --unpark C1 C3 --hours 1
   "skill_path": "/path/to/skill",
   "criteria": {
     "C1": {
-      "name": "Human-Readable Name",
+      "name": "Binary Checklist Eval — PREFERRED FORMAT (PASS/FAIL per item)",
+      "weight": 7,
+      "target_files": ["SKILL.md"],
+      "checklist": [
+        {"item": "SKILL.md has a Scope section declaring what is out-of-scope", "points": 2},
+        {"item": "At least 3 reference files exist with 50+ lines each", "points": 3},
+        {"item": "Phase descriptions are under 30 lines each", "points": 2},
+        {"item": "No inline code blocks in SKILL.md (belong in references)", "points": 3}
+      ]
+    },
+    "C2": {
+      "name": "Standard Eval (0-10 scale) — use only for subjective quality",
       "weight": 8,
       "target_files": ["SKILL.md", "references/foo.md"],
-      "eval_prompt": "Read {skill_path}/SKILL.md. Score 0-10: [specific scoring instructions with checklist]"
+      "eval_prompt": "Read {skill_path}/SKILL.md. Score 0-10: [specific scoring instructions]"
     }
   }
 }
 ```
 
-`{skill_path}` in eval_prompt is replaced at runtime with the actual path.
+`{skill_path}` in eval_prompt is replaced at runtime. Binary checklist criteria use `checklist` instead of `eval_prompt` — the LLM only decides PASS/FAIL per item (more deterministic).
 
 ## Git Integration
 
-The loop leverages git for safe keep/revert:
-- **Keep:** Changes stay in working tree (commit manually or let loop commit)
-- **Revert:** `git checkout -- <skill-path>/` restores previous state
-- **History:** `git log` shows what was kept across loops
+The loop uses git for safe keep/revert with proper isolation:
+- **Keep:** Changes are committed immediately (`autoresearch: improve <criterion>`)
+- **Revert:** `git checkout -- <modified-files>` restores only the files that changed (not the entire skill directory)
+- **History:** `git log` shows each kept improvement as a separate commit
+- **Regression revert:** If a kept change degrades overall score, it can be reverted via `git revert HEAD`
 
 ## Security
 

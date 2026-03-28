@@ -1,0 +1,89 @@
+{
+  "skill_name": "skill-optimizer",
+  "skill_path": "skills/skill-optimizer",
+  "criteria": {
+    "C2": {
+      "name": "Pre-Computation Completeness",
+      "weight": 9,
+      "target_files": ["scripts/improve.py"],
+      "checklist": [
+        {"item": "precompute_file_facts() extracts line counts via wc -l for all target files", "points": 1},
+        {"item": "precompute_file_facts() extracts heading counts via grep for all target files", "points": 1},
+        {"item": "precompute_file_facts() extracts code block counts for all target files", "points": 1},
+        {"item": "Pre-computed facts are injected into BOTH eval prompts AND research prompts (not just eval)", "points": 2},
+        {"item": "Eval prompt text includes explicit instruction to trust pre-computed numbers and NOT estimate or count manually", "points": 2},
+        {"item": "At least two additional pre-computed facts beyond line/heading/code-block counts exist (e.g., TODO/FIXME count, table count, word count, unique-entry count, reference file count)", "points": 3}
+      ]
+    },
+    "C5": {
+      "name": "Prompt Structure (Lost-in-the-Middle Defense)",
+      "weight": 8,
+      "target_files": ["scripts/improve.py", "SKILL.md"],
+      "checklist": [
+        {"item": "In evaluate_criterion(), the prompt string starts with criterion ID and name before any file content or context", "points": 2},
+        {"item": "In evaluate_criterion(), the JSON output format and final scoring rules appear in the LAST section of the prompt string, after all context", "points": 2},
+        {"item": "In evaluate_criterion(), pre-computed file facts appear BETWEEN the criterion description and the final scoring rules", "points": 2},
+        {"item": "SKILL.md has a section or paragraph documenting the lost-in-the-middle problem and recommending rubric-first, decision-last prompt layout for eval_prompts", "points": 2},
+        {"item": "In evaluate_binary_checklist(), the prompt follows the same structure: criterion ID first, checklist items in middle, rules and output format last", "points": 2}
+      ]
+    },
+    "C7": {
+      "name": "Confidence Calibration Integrity",
+      "weight": 7,
+      "target_files": ["scripts/improve.py", "SKILL.md"],
+      "checklist": [
+        {"item": "Cross-model disagreement of 3+ points forces confidence to 'low' regardless of individual model self-reports", "points": 2},
+        {"item": "Confidence weights are conservative: 'low' confidence weighs at most 0.5x of 'high' confidence", "points": 2},
+        {"item": "Binary checklist criteria are automatically assigned 'high' confidence (no self-report needed for deterministic mode)", "points": 2},
+        {"item": "SKILL.md has a dedicated paragraph or section explaining that LLM confidence self-reporting is unreliable (overestimates by 20-40%) and that the cross-model disagreement approach is used instead", "points": 4}
+      ]
+    },
+    "C8": {
+      "name": "Deterministic Pre-Flight Checks Before LLM Eval",
+      "weight": 9,
+      "target_files": ["scripts/improve.py"],
+      "checklist": [
+        {"item": "Before calling evaluate_criterion or evaluate_binary_checklist, the code checks that all target_files actually exist on disk and skips or errors if missing", "points": 2},
+        {"item": "precompute_file_facts handles missing files gracefully with a FILE DOES NOT EXIST message rather than crashing", "points": 2},
+        {"item": "The eval prompt result parser validates JSON structure before extracting score (not just regex on raw text)", "points": 2},
+        {"item": "A fallback_score mechanism exists so parse failures reuse the previous score instead of defaulting to 0", "points": 2},
+        {"item": "The _parse_result function tries at least 2 different parsing strategies (e.g., line-by-line JSON then regex fallback) before giving up", "points": 2}
+      ]
+    },
+    "C9": {
+      "name": "Eval Prompt Minimal-Context Discipline",
+      "weight": 8,
+      "target_files": ["scripts/improve.py"],
+      "checklist": [
+        {"item": "evaluate_criterion() prompt does NOT include the full skill description or skill purpose — only the criterion-specific rubric and target file paths", "points": 3},
+        {"item": "research_criterion() prompt does NOT include the criterion name, score, or eval_prompt — it describes files objectively without knowing the improvement goal", "points": 3},
+        {"item": "improve_criterion() prompt does NOT include raw scoring language (0-10 scale, score X) — only reframed directives of what must be present", "points": 2},
+        {"item": "discover_criteria() prompt provides only existing criteria names and scores (not full eval_prompts) to avoid context bloat", "points": 2}
+      ]
+    },
+    "C10": {
+      "name": "Eval Stability Defenses",
+      "weight": 9,
+      "target_files": ["scripts/improve.py", "SKILL.md"],
+      "checklist": [
+        {"item": "Score stability detection exists: untouched criteria that shift 3+ points between cycles are flagged as [NOISE]", "points": 2},
+        {"item": "When dual-sample scores from two models disagree by 3+ points, the code uses a weighted average by model capability (not simple average or min)", "points": 2},
+        {"item": "The NOISE flag or stability warning is printed to stdout so the user can see which criteria have unreliable eval_prompts", "points": 1},
+        {"item": "SKILL.md documents eval stability as a concern and recommends rewriting noisy eval_prompts to be more deterministic or converting to binary checklist", "points": 3},
+        {"item": "Selective re-evaluation exists: after improvement, only criteria whose target_files overlap with modified files are re-evaluated (not all criteria every cycle)", "points": 2}
+      ]
+    },
+    "C11": {
+      "name": "Improve Agent Assumption Minimization",
+      "weight": 10,
+      "target_files": ["scripts/improve.py"],
+      "checklist": [
+        {"item": "improve_criterion() includes past failed attempts from results JSONL so the agent avoids repeating the same approach", "points": 2},
+        {"item": "improve_criterion() prompt includes an explicit rule to keep changes minimal and focused — not restructure or add unrelated content", "points": 2},
+        {"item": "improve_criterion() prompt includes a rule to preserve existing content quality (not delete good content to make room)", "points": 2},
+        {"item": "research_criterion() runs BEFORE improve_criterion() in the pipeline so the improve agent receives factual file state rather than assuming content", "points": 2},
+        {"item": "improve_criterion() prompt includes the current score so the agent knows the gap size and does not over-correct or under-correct", "points": 2}
+      ]
+    }
+  }
+}
