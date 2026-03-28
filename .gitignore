@@ -1,5 +1,6 @@
 .DS_Store
 .claude/ideation/
+CLAUDE.md
 proposal-*/
 
 # Skill optimizer runtime data (logs, state, results)
