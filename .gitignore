@@ -2,6 +2,7 @@
 .claude/
 CLAUDE.md
 proposal-*/
+__pycache__/
 
 # Skill optimizer runtime data (logs, state, results)
 skills/skill-optimizer/data/*.jsonl

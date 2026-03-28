@@ -364,7 +364,17 @@ Kept improvements are immediately committed to protect from next cycle's revert.
 
 | File | Purpose |
 |------|---------|
-| `scripts/improve.py` | Main autoresearch loop (Python) |
+| `scripts/improve.py` | CLI entry point (thin shim) |
+| `scripts/improver/config.py` | Constants, model profiles, runtime config |
+| `scripts/improver/state.py` | Load/save criteria, state, results, stop signals |
+| `scripts/improver/runner.py` | Claude CLI subprocess wrapper |
+| `scripts/improver/models.py` | Model routing (auto-select per criterion) |
+| `scripts/improver/evaluation.py` | Binary checklist + scalar scoring, anti-gaming |
+| `scripts/improver/lifecycle.py` | Cooldown, parking, graduation, cap enforcement |
+| `scripts/improver/agents.py` | Research, improve, refine, discover pipelines |
+| `scripts/improver/calibration.py` | Gold standard creation and drift detection |
+| `scripts/improver/loop.py` | Main loop orchestration (run_cycle, run_loop) |
+| `scripts/improver/cli.py` | Argparse and main() |
 | `criteria/<skill>.json` | Criteria definitions per skill |
 | `data/state-<skill>.json` | Current best scores + confidence |
 | `data/results-<skill>.jsonl` | Run history (gitignored) |
