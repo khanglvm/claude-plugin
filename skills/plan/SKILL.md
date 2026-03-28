@@ -3,6 +3,7 @@ name: plan
 description: "Plan implementations, design architectures, create technical roadmaps with detailed phases. Use for feature planning, system design, solution architecture, implementation strategy, phase documentation."
 license: MIT
 metadata:
+  version: "1.0.0"
   argument-hint: "[task] OR archive|red-team|validate"
 ---
 

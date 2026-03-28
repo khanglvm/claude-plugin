@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Claude Code plugins by khang — skills for implementation, design, optimization, and more",
-    "version": "2.0.0"
+    "version": "2.1.0"
   },
   "plugins": [
     {
@@ -98,6 +98,16 @@
         "ref": "main"
       },
       "description": "Repair malformed Codex CLI skill files — format validation and auto-fix."
+    },
+    {
+      "name": "context-engineering",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/khanglvm/claude-plugin.git",
+        "path": "skills/context-engineering",
+        "ref": "main"
+      },
+      "description": "Context engineering guardrails enforcing hierarchical orchestrator-worker agent spawning, small-job-per-session limits, independent validator agents, CRISPY workflow, and vertical planning."
     }
   ]
 }

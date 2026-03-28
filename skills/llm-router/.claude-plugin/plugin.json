@@ -1,7 +1,7 @@
 {
   "name": "llm-router",
   "version": "1.0.0",
-  "description": "description: >",
+  "description": "Unified LLM gateway for multi-model routing across OpenAI, Anthropic, Gemini, and OpenRouter.",
   "author": { "name": "khang" },
   "repository": "https://github.com/khanglvm/claude-plugin",
   "license": "MIT",

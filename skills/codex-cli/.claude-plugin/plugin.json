@@ -1,7 +1,7 @@
 {
   "name": "codex-cli",
   "version": "1.0.0",
-  "description": "description: This skill should be used whenever the user mentions Codex CLI (including "codex", "openai codex cli", "cod",
+  "description": "OpenAI Codex CLI integration — auth, providers, config, and operations.",
   "author": { "name": "khang" },
   "repository": "https://github.com/khanglvm/claude-plugin",
   "license": "MIT",

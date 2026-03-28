@@ -19,6 +19,8 @@ triggers:
   - route requests
   - LLM proxy
   - model fallback
+metadata:
+  version: "1.0.0"
 ---
 
 # LLM Router (llr) Skill

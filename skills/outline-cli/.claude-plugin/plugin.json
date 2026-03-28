@@ -1,7 +1,7 @@
 {
   "name": "outline-cli",
   "version": "1.0.0",
-  "description": "description: Search, read, and update company documentation in Outline wiki. Use this skill whenever the user asks to se",
+  "description": "Search, read, and update company documentation in Outline wiki.",
   "author": { "name": "khang" },
   "repository": "https://github.com/khanglvm/claude-plugin",
   "license": "MIT",

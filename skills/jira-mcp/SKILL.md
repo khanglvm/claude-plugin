@@ -13,6 +13,8 @@ description: >
   transition-only status changes, self-hosted URL construction, response formatting
   with clickable ticket links, and "value does not exist" error prevention.
   Use this skill whenever interacting with any jira-mcp MCP tool.
+metadata:
+  version: "1.0.0"
 ---
 
 # Jira MCP Server for Jira Server 7.x (Self-Hosted)

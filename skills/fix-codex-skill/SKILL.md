@@ -1,6 +1,8 @@
 ---
 name: fix-codex-skill
 description: Repair invalid global or project skill formats for Codex compatibility, especially skills installed via `npx skills add` or copied from Claude-only templates. Use when users ask to fix broken global skills, invalid SKILL.md frontmatter, missing `agents/openai.yaml`, non-triggering skills, metadata schema issues, or cross-tool skill compatibility across Codex/Claude/agents skill folders.
+metadata:
+  version: "1.0.0"
 ---
 
 # Fix Codex Skill
