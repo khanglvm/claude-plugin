@@ -3,7 +3,7 @@ name: design-prompt
 description: "Interactive web design prompt builder. Guides users through multi-turn conversation collecting project vision, aesthetic direction, tech stack, typography, colors, effects, and page sections with auto-suggestions and intelligent expansion at each step. Produces a complete, implementation-ready design prompt. Use when user says 'design prompt', 'create a design brief', 'help me design a website', 'build a landing page prompt', 'web design spec', 'I want to build a website', 'design a page', or needs help articulating web design requirements into a detailed specification."
 metadata:
   author: khangle
-  version: "2.1.0"
+  version: "2.2.0"
 effort: high
 ---
 

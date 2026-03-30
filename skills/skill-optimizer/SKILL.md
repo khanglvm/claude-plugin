@@ -3,7 +3,7 @@ name: skill-optimizer
 description: "Autoresearch-pattern skill improvement loop with context-engineered agent orchestration. Analyzes any Claude skill, creates improvement criteria through interactive interview, then runs programmatic evaluate-improve-keep/revert cycles via claude CLI. Use when asked to 'improve a skill', 'optimize a skill', 'run autoresearch on skill', 'make this skill better', 'skill improvement loop', or when the user wants to iteratively improve any Claude Code skill using the Karpathy autoresearch pattern."
 metadata:
   author: khang
-  version: "1.2.0"
+  version: "1.3.0"
 ---
 
 # Skill Optimizer — Autoresearch Improvement Loop
